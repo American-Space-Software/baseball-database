@@ -1,0 +1,66 @@
+{
+  "name": "baseball-database",
+  "version": "0.1.0",
+  "description": "Download MLB game data and store it in a local SQLite database.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "baseball-database": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "test": "node --env-file=.env --loader ts-node/esm ./node_modules/mocha/bin/mocha --timeout 9999999999 \"test/**/*.spec.ts\"",
+    "download": "node --env-file=.env --loader ts-node/esm ./src/index.ts",
+    "download:range": "node --env-file=.env --loader ts-node/esm ./src/index.ts",
+    "build": "rm -rf dist && tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/American-Space-Software/baseball-database.git"
+  },
+  "bugs": {
+    "url": "https://github.com/American-Space-Software/baseball-database/issues"
+  },
+  "homepage": "https://github.com/American-Space-Software/baseball-database#readme",
+  "keywords": [
+    "baseball",
+    "mlb",
+    "database",
+    "sqlite",
+    "statistics",
+    "games",
+    "typescript",
+    "javascript",
+    "esm"
+  ],
+  "author": "Patrick Toner",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "12.2.0",
+    "mlb-stats-api": "2.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/mocha": "10.0.10",
+    "@types/node": "20.8.2",
+    "mocha": "11.7.5",
+    "ts-loader": "9.5.2",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.2"
+  }
+}
