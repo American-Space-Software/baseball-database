@@ -1,8 +1,8 @@
 # baseball-database
 
-Download and cache official MLB game data in a local SQLite database.
+Download and cache official MLB game data locally.
 
-`baseball-database` handles one of the most tedious parts of building baseball applications: downloading and maintaining a complete local copy of MLB game data. It automatically fetches schedules and game feeds from the MLB Stats API, stores them in SQLite, and provides a simple API for retrieving them.
+`baseball-database` handles one of the most tedious parts of building baseball applications: downloading and maintaining a complete local copy of MLB game data. It automatically fetches schedules and game feeds from the MLB Stats API, stores them in a local SQLite database, and provides a simple API for retrieving them.
 
 The package can be used as both a library and a command-line tool.
 
@@ -22,6 +22,40 @@ The package can be used as both a library and a command-line tool.
 
 ```bash
 npm install baseball-database
+```
+
+---
+
+# Command Line
+
+By default, downloaded data is stored in:
+
+```
+data/baseball.sqlite
+```
+
+You can override this location using the `BASEBALL_DATABASE_PATH` environment variable:
+
+```bash
+export BASEBALL_DATABASE_PATH=/path/to/baseball.sqlite
+```
+
+Download a single season:
+
+```bash
+baseball-database 2025
+```
+
+Download a range of seasons:
+
+```bash
+baseball-database 2023 2025
+```
+
+Force a complete re-download:
+
+```bash
+baseball-database 2025 --force
 ```
 
 ---
@@ -78,7 +112,7 @@ Force a re-download:
 await downloadSeason(2025, true)
 ```
 
-Returns a `Set<number>` containing the game IDs that were downloaded during the synchronization.
+Returns a `Set<number>` containing the game IDs that were downloaded during synchronization.
 
 ---
 
@@ -145,24 +179,6 @@ Returns `undefined` if the season has not been downloaded.
 
 ---
 
-# Database
-
-By default the database is stored at:
-
-```
-data/baseball.sqlite
-```
-
-You can override this location using the `BASEBALL_DATABASE_PATH` environment variable:
-
-```bash
-BASEBALL_DATABASE_PATH=/path/to/baseball.sqlite
-```
-
-This allows multiple applications to share the same downloaded MLB database.
-
----
-
 # Development
 
 Run directly from the repository:
@@ -181,30 +197,6 @@ Force a re-download:
 
 ```bash
 npm run download -- 2025 --force
-```
-
----
-
-# Installed CLI
-
-After installing the package globally (or running through `npx`), the package exposes a `baseball-database` command.
-
-Download a season:
-
-```bash
-baseball-database 2025
-```
-
-Download multiple seasons:
-
-```bash
-baseball-database 2023 2025
-```
-
-Force a re-download:
-
-```bash
-baseball-database 2025 --force
 ```
 
 ---
