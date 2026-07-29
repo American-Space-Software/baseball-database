@@ -1,26 +1,63 @@
-
 import type { GameFeedResponse, ScheduleResponse } from "mlb-stats-api"
 
-import { GameRepository } from "../repository/game-repository.js"
 import type { Game } from "../repository/game-repository.js"
 import { ScheduleRepository } from "../repository/schedule-repository.js"
 import type { Schedule } from "../repository/schedule-repository.js"
+import { GameService } from "./game-service.js"
 
 class DownloadService {
 
     public constructor(
-        private readonly gameRepository: GameRepository, 
-        private readonly scheduleRepository: ScheduleRepository, 
-        private readonly api: MLBStatsAPIClient, 
-        private readonly throttleMs = 200, 
+        private readonly gameService: GameService,
+        private readonly scheduleRepository: ScheduleRepository,
+        private readonly api: MLBStatsAPIClient,
+        private readonly throttleMs = 200,
         private readonly scheduleCacheMs = 1000 * 60 * 60) {}
 
     public async syncSeason(season: number, force = false): Promise<Set<number>> {
+        const syncStartedAt = Date.now()
+
+        console.log(`Starting season ${season} synchronization${force ? " with force enabled" : ""}`)
+
+        const scheduleStartedAt = Date.now()
         const games = await this.getSeasonGames(season, force)
+        const scheduleDuration = Date.now() - scheduleStartedAt
+
+        console.log(
+            `Loaded ${games.length} scheduled games for season ${season} ` +
+            `in ${this.formatPreciseDuration(scheduleDuration)}`
+        )
+
+        const completedGamePkQueryStartedAt = Date.now()
+
+        const completedGamePks = force
+            ? new Set<number>()
+            : new Set(
+                this.gameService.getCompletedGamePksByDateRange(
+                    `${season}-01-01`,
+                    `${season}-12-31`
+                )
+            )
+
+        const completedGamePkQueryDuration = Date.now() - completedGamePkQueryStartedAt
+
+        console.log(
+            `Loaded ${completedGamePks.size} completed game PKs ` +
+            `for season ${season} in ` +
+            `${this.formatPreciseDuration(completedGamePkQueryDuration)}`
+        )
+
         const synchronizedGamePks = new Set<number>()
         const failedGames: DownloadFailure[] = []
 
-        console.log(`Processing ${games.length} games for season ${season}`)
+        let downloadedGames = 0
+        let cachedGames = 0
+        let skippedGames = 0
+        let cachedCheckDuration = 0
+        let downloadDuration = 0
+        let throttleDuration = 0
+
+        const loopStartedAt = Date.now()
 
         for (let index = 0; index < games.length; index++) {
             const scheduledGame = games[index]
@@ -28,24 +65,49 @@ class DownloadService {
             const gameDate = this.getGameDate(scheduledGame)
 
             if (!gamePk || !gameDate || this.isFutureGameDate(gameDate)) {
+                skippedGames++
+                continue
+            }
+
+            const cachedCheckStartedAt = Date.now()
+            const isCached = !force && completedGamePks.has(gamePk)
+
+            cachedCheckDuration += Date.now() - cachedCheckStartedAt
+
+            if (isCached) {
+                synchronizedGamePks.add(gamePk)
+                cachedGames++
                 continue
             }
 
             try {
-                const result = await this.syncGame(gamePk, force)
+                const downloadStartedAt = Date.now()
 
+                await this.syncGame(gamePk)
+
+                const gameDownloadDuration = Date.now() - downloadStartedAt
+
+                downloadDuration += gameDownloadDuration
                 synchronizedGamePks.add(gamePk)
+                downloadedGames++
 
                 console.log(
-                    `Processed ${index + 1}/${games.length} ` +
-                    `(gamePk: ${gamePk}, date: ${gameDate}, downloaded: ${result.downloaded})`
+                    `Downloaded ${index + 1}/${games.length} ` +
+                    `(gamePk: ${gamePk}, date: ${gameDate}) ` +
+                    `in ${this.formatPreciseDuration(gameDownloadDuration)}`
                 )
 
-                if (result.downloaded && this.throttleMs > 0) {
+                if (this.throttleMs > 0) {
+                    const throttleStartedAt = Date.now()
+
                     await this.sleep(this.throttleMs)
+
+                    throttleDuration += Date.now() - throttleStartedAt
                 }
             } catch (error: unknown) {
-                const message = error instanceof Error ? error.message : String(error)
+                const message = error instanceof Error
+                    ? error.message
+                    : String(error)
 
                 failedGames.push({
                     gamePk,
@@ -53,44 +115,78 @@ class DownloadService {
                     message
                 })
 
-                console.error(`Failed game ${gamePk} (${gameDate}): ${message}`)
+                console.error(
+                    `Failed game ${gamePk} (${gameDate}): ${message}`
+                )
+            }
+
+            if ((index + 1) % 100 === 0 || index === games.length - 1) {
+                console.log(
+                    `Processed ${index + 1}/${games.length}: ` +
+                    `${downloadedGames} downloaded, ` +
+                    `${cachedGames} cached, ` +
+                    `${skippedGames} skipped, ` +
+                    `${failedGames.length} failed, ` +
+                    `loop ${this.formatPreciseDuration(Date.now() - loopStartedAt)}`
+                )
             }
         }
+
+        const loopDuration = Date.now() - loopStartedAt
+        const totalDuration = Date.now() - syncStartedAt
+
+        const unaccountedDuration = Math.max(
+            0,
+            totalDuration -
+            scheduleDuration -
+            completedGamePkQueryDuration -
+            cachedCheckDuration -
+            downloadDuration -
+            throttleDuration
+        )
+
+        console.log([
+            `Season ${season} synchronization timing:`,
+            `  Schedule load: ${this.formatPreciseDuration(scheduleDuration)}`,
+            `  Completed-PK query: ${this.formatPreciseDuration(completedGamePkQueryDuration)}`,
+            `  Cached PK checks: ${this.formatPreciseDuration(cachedCheckDuration)}`,
+            `  Game downloads and writes: ${this.formatPreciseDuration(downloadDuration)}`,
+            `  Throttling: ${this.formatPreciseDuration(throttleDuration)}`,
+            `  Full game loop: ${this.formatPreciseDuration(loopDuration)}`,
+            `  Other overhead: ${this.formatPreciseDuration(unaccountedDuration)}`,
+            `  Total: ${this.formatPreciseDuration(totalDuration)}`
+        ].join("\n"))
 
         if (failedGames.length > 0) {
             throw new Error([
                 `Season ${season} game synchronization failed.`,
                 `Download failures: ${failedGames.length}`,
-                ...failedGames.map(game => `${game.gameDate} gamePk=${game.gamePk}: ${game.message}`)
+                ...failedGames.map(game =>
+                    `${game.gameDate} gamePk=${game.gamePk}: ${game.message}`
+                )
             ].join("\n"))
         }
 
-        console.log(`Finished processing season ${season}: ${synchronizedGamePks.size} games synchronized`)
+        console.log(
+            `Finished processing season ${season}: ` +
+            `${downloadedGames} downloaded, ` +
+            `${cachedGames} already complete, ` +
+            `${skippedGames} skipped, ` +
+            `${this.formatPreciseDuration(totalDuration)}`
+        )
 
         return synchronizedGamePks
     }
 
-    public async syncGame(gamePk: number, force = false): Promise<DownloadResult> {
-        const existing = this.gameRepository.get(gamePk)
-
-        if (!force && existing && this.isGameTerminal(existing.data)) {
-            return {
-                game: existing,
-                downloaded: false
-            }
-        }
-
-        const game = {
+    public async syncGame(gamePk: number): Promise<Game> {
+        const game: Game = {
             gamePk,
             data: await this.downloadGame(gamePk)
         }
 
-        this.gameRepository.put(game)
+        this.gameService.syncGame(game)
 
-        return {
-            game,
-            downloaded: true
-        }
+        return game
     }
 
     public async getSchedule(season: number, force = false): Promise<Schedule> {
@@ -120,11 +216,9 @@ class DownloadService {
                 const game = scheduleGame as ScheduleGame
                 const gamePk = Number(game.gamePk)
 
-                if (!gamePk) {
-                    continue
+                if (gamePk) {
+                    games.set(gamePk, game)
                 }
-
-                games.set(gamePk, game)
             }
         }
 
@@ -138,6 +232,14 @@ class DownloadService {
 
             return Number(a.gamePk) - Number(b.gamePk)
         })
+    }
+
+    private formatPreciseDuration(milliseconds: number): string {
+        if (milliseconds < 1000) {
+            return `${milliseconds}ms`
+        }
+
+        return `${(milliseconds / 1000).toFixed(2)}s`
     }
 
     private async downloadSchedule(season: number): Promise<ScheduleResponse> {
@@ -201,28 +303,6 @@ class DownloadService {
         return gameTime > today
     }
 
-    private isGameComplete(data: GameFeedResponse): boolean {
-        const abstractState = String(data.gameData?.status?.abstractGameState ?? "")
-        const codedState = String(data.gameData?.status?.codedGameState ?? "")
-        const detailedState = String(data.gameData?.status?.detailedState ?? "")
-
-        return abstractState === "Final" ||
-            codedState === "F" ||
-            detailedState === "Final" ||
-            detailedState === "Completed Early"
-    }
-
-    private isGameTerminal(data: GameFeedResponse): boolean {
-        if (this.isGameComplete(data)) {
-            return true
-        }
-
-        const detailedState = String(data.gameData?.status?.detailedState ?? "").toLowerCase()
-
-        return detailedState.includes("cancelled") ||
-            detailedState.includes("canceled") ||
-            detailedState.includes("postponed")
-    }
 
     private async sleep(milliseconds: number): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -260,11 +340,6 @@ interface MLBStatsAPIClient {
     }>
 }
 
-interface DownloadResult {
-    game: Game
-    downloaded: boolean
-}
-
 interface DownloadFailure {
     gamePk: number
     gameDate: string
@@ -276,6 +351,5 @@ export {
 }
 
 export type {
-    DownloadResult,
     MLBStatsAPIClient
 }

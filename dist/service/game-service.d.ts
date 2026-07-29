@@ -1,0 +1,45 @@
+import { FieldingCreditRepository } from "../repository/fielding-credit-repository.js";
+import { GameRepository } from "../repository/game-repository.js";
+import { PitchRepository } from "../repository/pitch-repository.js";
+import { PlateAppearanceRepository } from "../repository/plate-appearance-repository.js";
+import { PlayerAppearanceRepository } from "../repository/player-appearance-repository.js";
+import { RunnerMovementRepository } from "../repository/runner-movement-repository.js";
+import type { Game } from "../repository/game-repository.js";
+import { DefensiveEventRepository } from "../repository/defensive-event-repository.js";
+declare class GameService {
+    private readonly gameRepository;
+    private readonly playerAppearanceRepository;
+    private readonly plateAppearanceRepository;
+    private readonly pitchRepository;
+    private readonly runnerMovementRepository;
+    private readonly fieldingCreditRepository;
+    private readonly defensiveEventRepository;
+    constructor(gameRepository: GameRepository, playerAppearanceRepository: PlayerAppearanceRepository, plateAppearanceRepository: PlateAppearanceRepository, pitchRepository: PitchRepository, runnerMovementRepository: RunnerMovementRepository, fieldingCreditRepository: FieldingCreditRepository, defensiveEventRepository: DefensiveEventRepository);
+    get(gamePk: number): Game | undefined;
+    getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
+    syncGame(game: Game): void;
+    private syncPlayerAppearances;
+    private syncTeamPlayerAppearances;
+    private syncPlateAppearances;
+    private syncPitches;
+    private syncRunnerMovements;
+    private syncFieldingCredits;
+    private playerAppearedAsBatter;
+    private playerAppearedAsPitcher;
+    private playerAppearedAsRunner;
+    private playerAppearedAsFielder;
+    private hasDefensivePosition;
+    private numberOrNull;
+    private getAllPlays;
+    private syncDefensiveEvents;
+    private syncStartingDefensiveAssignments;
+    private syncDefensiveEvent;
+    private getStartingDefensivePosition;
+    private getDefensiveTeamId;
+    private isPitchingChange;
+    private isDefensiveSubstitution;
+    private isDefensiveSwitch;
+    private normalizeDefensivePosition;
+}
+export { GameService };
+//# sourceMappingURL=game-service.d.ts.map

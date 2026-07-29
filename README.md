@@ -11,7 +11,9 @@ The package can be used as both a library and a command-line tool.
 - ⚾ Download complete MLB seasons
 - 🗓️ Download arbitrary ranges of seasons
 - 💾 Cache official MLB schedules and game feeds locally
-- 🚀 Automatically skips games that have already been downloaded
+- 🚀 Automatically skips completed games that have already been downloaded
+- 🔄 Automatically refreshes games that are still in progress
+- 🔎 Fast game status queries without parsing JSON
 - 📦 Simple library API
 - 🛠️ Lightweight with no ORM
 - 📝 Written in TypeScript with full type definitions
@@ -30,7 +32,7 @@ npm install baseball-database
 
 By default, downloaded data is stored in:
 
-```
+```text
 data/baseball.sqlite
 ```
 
@@ -39,6 +41,8 @@ You can override this location using the `BASEBALL_DATABASE_PATH` environment va
 ```bash
 export BASEBALL_DATABASE_PATH=/path/to/baseball.sqlite
 ```
+
+The database is created automatically if it does not already exist.
 
 Download a single season:
 
@@ -71,7 +75,8 @@ await downloadSeason(2025)
 
 const game = getGame(777858)
 
-console.log(game?.data.gameData.datetime.officialDate)
+console.log(game?.gameDate)
+console.log(game?.detailedState)
 ```
 
 Retrieve a game:
@@ -112,7 +117,9 @@ Force a re-download:
 await downloadSeason(2025, true)
 ```
 
-Returns a `Set<number>` containing the game IDs that were downloaded during synchronization.
+Returns a `Set<number>` containing the synchronized game IDs for the season.
+
+Completed games already stored locally are reused automatically. Games that are missing or not yet complete are downloaded.
 
 ---
 
@@ -150,8 +157,18 @@ Returns:
 interface Game {
     gamePk: number
     data: GameFeedResponse
+
+    gameDate?: string | null
+    abstractGameState?: string | null
+    codedGameState?: string | null
+    detailedState?: string | null
+    statusCode?: string | null
 }
 ```
+
+The `data` property contains the complete game feed exactly as returned by MLB.
+
+The additional properties expose commonly queried status information directly without requiring applications to parse the JSON response.
 
 Returns `undefined` if the game has not been downloaded.
 
@@ -193,7 +210,7 @@ Download a range of seasons:
 npm run download -- 2023 2025
 ```
 
-Force a re-download:
+Force a complete re-download:
 
 ```bash
 npm run download -- 2025 --force

@@ -4,11 +4,21 @@ declare class GameRepository {
     private readonly database;
     constructor(database: Database);
     get(gamePk: number): Game | undefined;
+    getByPks(gamePks: number[]): Game[];
+    getCompletedByDate(date: string): Game[];
     put(game: Game): void;
+    getCompletedGamePksByDate(date: string): number[];
+    getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
+    private mapRow;
 }
 interface Game {
     gamePk: number;
     data: GameFeedResponse;
+    gameDate?: string | null;
+    abstractGameState?: string | null;
+    codedGameState?: string | null;
+    detailedState?: string | null;
+    statusCode?: string | null;
 }
 export { GameRepository };
 export type { Game };

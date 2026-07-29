@@ -5,17 +5,66 @@ class GameRepository {
     }
     get(gamePk) {
         const row = this.database.prepare(`
-            SELECT game_pk, data
+            SELECT
+                game_pk AS gamePk,
+                data,
+                game_date AS gameDate,
+                abstract_game_state AS abstractGameState,
+                coded_game_state AS codedGameState,
+                detailed_state AS detailedState,
+                status_code AS statusCode
             FROM games
             WHERE game_pk = ?
         `).get(gamePk);
-        if (!row) {
-            return undefined;
+        return row
+            ? this.mapRow(row)
+            : undefined;
+    }
+    getByPks(gamePks) {
+        if (gamePks.length === 0) {
+            return [];
         }
-        return {
-            gamePk: row.game_pk,
-            data: JSON.parse(row.data)
-        };
+        const placeholders = gamePks
+            .map(() => "?")
+            .join(", ");
+        const rows = this.database.prepare(`
+            SELECT
+                game_pk AS gamePk,
+                data,
+                game_date AS gameDate,
+                abstract_game_state AS abstractGameState,
+                coded_game_state AS codedGameState,
+                detailed_state AS detailedState,
+                status_code AS statusCode
+            FROM games
+            WHERE game_pk IN (${placeholders})
+            ORDER BY game_pk
+        `).all(...gamePks);
+        return rows.map(row => this.mapRow(row));
+    }
+    getCompletedByDate(date) {
+        const rows = this.database.prepare(`
+            SELECT
+                game_pk AS gamePk,
+                data,
+                game_date AS gameDate,
+                abstract_game_state AS abstractGameState,
+                coded_game_state AS codedGameState,
+                detailed_state AS detailedState,
+                status_code AS statusCode
+            FROM games
+            WHERE game_date = ?
+                AND abstract_game_state = 'Final'
+                AND detailed_state NOT IN (
+                    'Postponed',
+                    'Cancelled',
+                    'Suspended'
+                )
+                AND coded_game_state <> 'D'
+                AND status_code <> 'DR'
+            ORDER BY game_pk
+        `).all(date);
+        return rows.map(row => this.mapRow(row));
     }
     put(game) {
         this.database.prepare(`
@@ -33,6 +82,54 @@ class GameRepository {
             gamePk: game.gamePk,
             data: JSON.stringify(game.data)
         });
+    }
+    getCompletedGamePksByDate(date) {
+        const rows = this.database.prepare(`
+            SELECT
+                game_pk AS gamePk
+            FROM games
+            WHERE game_date = ?
+                AND abstract_game_state = 'Final'
+                AND detailed_state NOT IN (
+                    'Postponed',
+                    'Cancelled',
+                    'Suspended'
+                )
+                AND coded_game_state <> 'D'
+                AND status_code <> 'DR'
+            ORDER BY game_pk
+        `).all(date);
+        return rows.map(row => row.gamePk);
+    }
+    getCompletedGamePksByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                game_pk AS gamePk
+            FROM games
+            WHERE game_date >= ?
+                AND game_date <= ?
+                AND abstract_game_state = 'Final'
+                AND detailed_state NOT IN (
+                    'Postponed',
+                    'Cancelled',
+                    'Suspended'
+                )
+                AND coded_game_state <> 'D'
+                AND status_code <> 'DR'
+            ORDER BY game_date, game_pk
+        `).all(startDate, endDate);
+        return rows.map(row => row.gamePk);
+    }
+    mapRow(row) {
+        return {
+            gamePk: row.gamePk,
+            data: JSON.parse(row.data),
+            gameDate: row.gameDate,
+            abstractGameState: row.abstractGameState,
+            codedGameState: row.codedGameState,
+            detailedState: row.detailedState,
+            statusCode: row.statusCode
+        };
     }
 }
 export { GameRepository };

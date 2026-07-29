@@ -2,23 +2,61 @@
 
 import path from "path"
 import { fileURLToPath } from "url"
+
 import MLBStatsAPI from "mlb-stats-api"
 
+import { FieldingCreditRepository } from "./repository/fielding-credit-repository.js"
 import { GameRepository } from "./repository/game-repository.js"
+import { PitchRepository } from "./repository/pitch-repository.js"
+import { PlateAppearanceRepository } from "./repository/plate-appearance-repository.js"
+import { PlayerAppearanceRepository } from "./repository/player-appearance-repository.js"
+import { RunnerMovementRepository } from "./repository/runner-movement-repository.js"
 import { ScheduleRepository } from "./repository/schedule-repository.js"
-import { DownloadService } from "./service/download-service.js"
-import { SchemaService } from "./service/schema-service.js"
 
-const databasePath = process.env.BASEBALL_DATABASE_PATH ?? path.resolve(process.cwd(), "data/baseball.sqlite")
-const throttleMs = process.env.THROTTLE_MS ? parseInt(process.env.THROTTLE_MS) : 200
+import { DownloadService } from "./service/download-service.js"
+import { GameService } from "./service/game-service.js"
+import { SchemaService } from "./service/schema-service.js"
+import { DefensiveEventRepository } from "./repository/defensive-event-repository.js"
+
+const databasePath =
+    process.env.BASEBALL_DATABASE_PATH ??
+    path.resolve(process.cwd(), "data/baseball.sqlite")
+
+const throttleMs = process.env.THROTTLE_MS
+    ? parseInt(process.env.THROTTLE_MS)
+    : 200
+
 const schemaService = new SchemaService(databasePath)
 const database = schemaService.load()
+
 const gameRepository = new GameRepository(database)
+const playerAppearanceRepository = new PlayerAppearanceRepository(database)
+const plateAppearanceRepository = new PlateAppearanceRepository(database)
+const pitchRepository = new PitchRepository(database)
+const runnerMovementRepository = new RunnerMovementRepository(database)
+const fieldingCreditRepository = new FieldingCreditRepository(database)
 const scheduleRepository = new ScheduleRepository(database)
-const downloadService = new DownloadService(gameRepository, scheduleRepository, new MLBStatsAPI(), throttleMs)
+const defensiveEventRepository = new DefensiveEventRepository(database)
+
+const gameService = new GameService(
+    gameRepository,
+    playerAppearanceRepository,
+    plateAppearanceRepository,
+    pitchRepository,
+    runnerMovementRepository,
+    fieldingCreditRepository,
+    defensiveEventRepository
+)
+
+const downloadService = new DownloadService(
+    gameService,
+    scheduleRepository,
+    new MLBStatsAPI(),
+    throttleMs
+)
 
 export function getGame(gamePk: number) {
-    return gameRepository.get(gamePk)
+    return gameService.get(gamePk)
 }
 
 export function getSchedule(season: number) {
@@ -34,7 +72,11 @@ export async function downloadSeasons(startSeason: number, endSeason: number, fo
 
     for (let season = startSeason; season <= endSeason; season++) {
         console.log(`\n=== Synchronizing ${season} ===`)
-        results.set(season, await downloadService.syncSeason(season, force))
+
+        results.set(
+            season,
+            await downloadService.syncSeason(season, force)
+        )
     }
 
     return results
@@ -42,30 +84,60 @@ export async function downloadSeasons(startSeason: number, endSeason: number, fo
 
 async function run(): Promise<void> {
     const force = process.argv.includes("--force")
-    const seasons = process.argv.slice(2).filter(argument => argument !== "--force").map(Number)
+
+    const seasons = process.argv
+        .slice(2)
+        .filter(argument => argument !== "--force")
+        .map(Number)
+
+    if (seasons.some(season => !Number.isInteger(season))) {
+        throw new Error("Every season must be a valid integer.")
+    }
 
     if (seasons.length === 1) {
-        await downloadSeason(seasons[0], force)
+        await downloadSeason(
+            seasons[0],
+            force
+        )
+
         return
     }
 
     if (seasons.length === 2) {
-        await downloadSeasons(seasons[0], seasons[1], force)
+        const [startSeason, endSeason] = seasons
+
+        if (startSeason > endSeason) {
+            throw new Error("The start season cannot be after the end season.")
+        }
+
+        await downloadSeasons(
+            startSeason,
+            endSeason,
+            force
+        )
+
         return
     }
 
-    throw new Error("Expected one season or a start and end season.")
+    throw new Error(
+        "Expected one season or a start and end season."
+    )
 }
 
 function isMainModule(): boolean {
-    return !!process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+    return (
+        !!process.argv[1] &&
+        path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+    )
 }
 
 if (isMainModule()) {
     run()
-        .catch(error => {
+        .catch((error: unknown) => {
             console.error(error)
             process.exitCode = 1
         })
-        .finally(() => schemaService.close())
+        .finally(() => {
+            schemaService.close()
+        })
 }

@@ -24,7 +24,6 @@
   "scripts": {
     "test": "node --env-file=.env --loader ts-node/esm ./node_modules/mocha/bin/mocha --timeout 9999999999 \"test/**/*.spec.ts\"",
     "download": "node --env-file=.env --loader ts-node/esm ./src/index.ts",
-    "download:range": "node --env-file=.env --loader ts-node/esm ./src/index.ts",
     "build": "rm -rf dist && tsc --project tsconfig.json",
     "build:watch": "tsc --project tsconfig.json --watch",
     "prepublishOnly": "npm run build"
