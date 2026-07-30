@@ -89,6 +89,7 @@ describe("DownloadService", function () {
         const defensiveEventRepository = new DefensiveEventRepository(database)
 
         gameService = new GameService(
+            schemaService,
             gameRepository,
             playerAppearanceRepository,
             plateAppearanceRepository,

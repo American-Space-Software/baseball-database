@@ -52,6 +52,11 @@ async function downloadSeasons(startSeason, endSeason, force = false) {
     }
     return results;
 }
+const queries = {
+    getGame,
+    getSchedule,
+    getStatExport
+};
 async function run() {
     const force = process.argv.includes("--force");
     const seasons = process.argv
@@ -89,5 +94,5 @@ if (isMainModule()) {
         schemaService.close();
     });
 }
-export { downloadSeason, downloadSeasons, getGame, getSchedule, getStatExport };
+export { downloadSeason, downloadSeasons, queries, database };
 //# sourceMappingURL=index.js.map

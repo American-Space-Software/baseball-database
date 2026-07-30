@@ -18,6 +18,7 @@ import { DownloadService } from "./service/download-service.js"
 import { GameService } from "./service/game-service.js"
 import { SchemaService } from "./service/schema-service.js"
 import { StatExportService } from "./service/stat-export-service.js"
+import type BetterSqlite3 from "better-sqlite3"
 
 const databasePath =
     process.env.BASEBALL_DATABASE_PATH ??
@@ -28,7 +29,7 @@ const throttleMs = process.env.THROTTLE_MS
     : 200
 
 const schemaService = new SchemaService(databasePath)
-const database = schemaService.load()
+const database: BetterSqlite3.Database = schemaService.load()
 
 const gameRepository = new GameRepository(database)
 const playerAppearanceRepository = new PlayerAppearanceRepository(database)
@@ -97,6 +98,12 @@ async function downloadSeasons(startSeason: number, endSeason: number, force = f
     return results
 }
 
+const queries = {
+    getGame,
+    getSchedule,
+    getStatExport
+}
+
 async function run(): Promise<void> {
     const force = process.argv.includes("--force")
 
@@ -160,7 +167,6 @@ if (isMainModule()) {
 export {
     downloadSeason,
     downloadSeasons,
-    getGame,
-    getSchedule,
-    getStatExport
+    queries,
+    database
 }

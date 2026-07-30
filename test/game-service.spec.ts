@@ -11,6 +11,7 @@ import type { PlayerAppearance } from "../src/repository/player-appearance-repos
 import type { RunnerMovement } from "../src/repository/runner-movement-repository.js"
 
 import { GameService } from "../src/service/game-service.js"
+import { SchemaService } from "../src/service/schema-service.js"
 
 class GameRepositoryTestDouble {
 
@@ -107,6 +108,7 @@ class DefensiveEventRepositoryTestDouble {
 
 class GameServiceTestHarness {
 
+    public readonly schemaService: SchemaService
     public readonly gameRepository = new GameRepositoryTestDouble()
     public readonly playerAppearanceRepository = new PlayerAppearanceRepositoryTestDouble()
     public readonly plateAppearanceRepository = new PlateAppearanceRepositoryTestDouble()
@@ -114,23 +116,30 @@ class GameServiceTestHarness {
     public readonly runnerMovementRepository = new RunnerMovementRepositoryTestDouble()
     public readonly fieldingCreditRepository = new FieldingCreditRepositoryTestDouble()
     public readonly defensiveEventRepository = new DefensiveEventRepositoryTestDouble()
+    public readonly service: GameService
 
-    public readonly service = new GameService(
-        this.gameRepository as any,
-        this.playerAppearanceRepository as any,
-        this.plateAppearanceRepository as any,
-        this.pitchRepository as any,
-        this.runnerMovementRepository as any,
-        this.fieldingCreditRepository as any,
-        this.defensiveEventRepository as any
-    )
+    public constructor() {
+        this.schemaService = new SchemaService(":memory:")
+        this.schemaService.load()
+
+        this.service = new GameService(
+            this.schemaService,
+            this.gameRepository as any,
+            this.playerAppearanceRepository as any,
+            this.plateAppearanceRepository as any,
+            this.pitchRepository as any,
+            this.runnerMovementRepository as any,
+            this.fieldingCreditRepository as any,
+            this.defensiveEventRepository as any
+        )
+    }
 
     public buildGame(): Game {
         return {
             gamePk: 123456,
             date: "2026-07-28",
             season: 2026,
-            
+
             data: {
                 gameData: {
                     teams: {

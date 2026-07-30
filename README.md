@@ -2,24 +2,26 @@
 
 A lightweight TypeScript library for downloading, caching, and querying official MLB game data locally.
 
-`baseball-database` automatically downloads MLB schedules and game feeds from the official MLB Stats API, stores them in a local SQLite database, and exposes a simple API for accessing that data. It is designed to be the foundation for baseball simulations, analytics, projections, machine learning, and historical research.
+`baseball-database` downloads official MLB schedules and game feeds from the MLB Stats API, stores them in a local SQLite database, and exposes both a simple TypeScript API and the underlying SQLite database for applications that need complete control over their queries.
 
-Use it as a library inside your own applications or as a command-line tool to maintain a complete local MLB database.
+Whether you're building simulations, projections, fantasy tools, machine learning pipelines, visualization dashboards, or historical research projects, `baseball-database` provides a fast, reproducible local data layer that your application can build upon.
+
+It can be used as either a library inside your own application or as a command-line tool to maintain a complete local MLB database.
 
 ---
 
-## Features
+# Features
 
 - ⚾ Download complete MLB seasons with a single command
-- 📅 Download one season or an arbitrary range of seasons
-- 💾 Store schedules and game feeds in a local SQLite database
-- 🚀 Incremental synchronization that skips completed games already downloaded
-- 🔄 Automatically refresh games that are still in progress
-- ⚡ Fast indexed lookups by game ID or season
-- 🔎 Query game status without parsing large JSON documents
-- 📦 Simple synchronous read API
+- 📅 Download individual seasons or season ranges
+- 💾 Cache official MLB schedules and game feeds in SQLite
+- 🚀 Incrementally synchronize only games that have changed
+- 🔄 Automatically refresh games still in progress
+- ⚡ Fast indexed queries for common baseball workflows
+- 🗄️ Direct access to the underlying `better-sqlite3` database
+- 📦 Simple TypeScript API
 - 🛠️ Zero ORM dependencies
-- 📝 Written in TypeScript with full type definitions
+- 📝 Full TypeScript type definitions included
 
 ---
 
@@ -33,7 +35,7 @@ npm install baseball-database
 
 # Command Line
 
-By default the database is stored at:
+By default, the database is stored at:
 
 ```text
 data/baseball.sqlite
@@ -45,7 +47,7 @@ To use a different location:
 export BASEBALL_DATABASE_PATH=/path/to/baseball.sqlite
 ```
 
-The database schema is created automatically.
+The database schema is created automatically on first use.
 
 ## Download a season
 
@@ -59,7 +61,7 @@ baseball-database 2025
 baseball-database 2023 2025
 ```
 
-This downloads:
+Downloads:
 
 - 2023
 - 2024
@@ -74,6 +76,8 @@ baseball-database 2025 --force
 ---
 
 # Library Usage
+
+Before querying data, download at least one season into your local database.
 
 ## Download a season
 
@@ -95,40 +99,50 @@ import { downloadSeasons } from "baseball-database"
 await downloadSeasons(2023, 2025)
 ```
 
-Equivalent to:
+---
+
+## Query downloaded data
 
 ```ts
-await downloadSeason(2023)
-await downloadSeason(2024)
-await downloadSeason(2025)
+import { queries } from "baseball-database"
+
+const game = queries.getGame(777858)
+const schedule = queries.getSchedule(2025)
+
+const exportData = queries.getStatExport(
+    "2025-04-01",
+    "2025-04-30"
+)
 ```
+
+The query API only accesses data already stored in your local database.
 
 ---
 
-## Retrieve a game
+## Execute custom SQL
+
+For analytical workloads, the initialized SQLite database is also exported.
 
 ```ts
-import { getGame } from "baseball-database"
+import { database } from "baseball-database"
 
-const game = getGame(777858)
-
-console.log(game?.gameDate)
-console.log(game?.detailedState)
-console.log(game?.data)
+const games = database
+    .prepare(`
+        SELECT
+            game_pk,
+            game_date,
+            detailed_state
+        FROM games
+        WHERE game_date BETWEEN ? AND ?
+        ORDER BY game_date
+    `)
+    .all(
+        "2025-04-01",
+        "2025-04-30"
+    )
 ```
 
----
-
-## Retrieve a season schedule
-
-```ts
-import { getSchedule } from "baseball-database"
-
-const schedule = getSchedule(2025)
-
-console.log(schedule?.downloadedAt)
-console.log(schedule?.data)
-```
+This is the same `better-sqlite3` connection used internally by the library.
 
 ---
 
@@ -142,48 +156,52 @@ Downloads and synchronizes every game for a season.
 await downloadSeason(2025)
 ```
 
-Force a full re-download:
+Force a complete re-download:
 
 ```ts
 await downloadSeason(2025, true)
 ```
 
-**Returns**
+Completed games are reused automatically while games that are missing or still in progress are refreshed.
+
+Returns:
 
 ```ts
 Promise<Set<number>>
 ```
 
-The returned set contains every synchronized MLB `gamePk`.
-
-Games already marked complete are reused automatically. Games that are missing or still in progress are refreshed.
-
 ---
 
 ## `downloadSeasons()`
 
-Downloads multiple seasons.
+Downloads an inclusive range of seasons.
 
 ```ts
 await downloadSeasons(2023, 2025)
 ```
 
-**Returns**
+Equivalent to:
+
+```ts
+await downloadSeason(2023)
+await downloadSeason(2024)
+await downloadSeason(2025)
+```
+
+Returns:
 
 ```ts
 Promise<Map<number, Set<number>>>
 ```
 
-The returned map is keyed by season.
-
 ---
 
-## `getGame()`
+## `queries.getGame()`
 
 Returns a previously downloaded MLB game.
 
 ```ts
-const game = getGame(777858)
+const game = queries.getGame(777858)
 ```
 
 ```ts
@@ -199,20 +217,16 @@ interface Game {
 }
 ```
 
-The `data` property contains the complete official MLB game feed exactly as returned by the MLB Stats API.
-
-The additional fields expose commonly queried status values directly from indexed database columns, allowing applications to determine game state without parsing the JSON feed.
-
 Returns `undefined` if the game has not been downloaded.
 
 ---
 
-## `getSchedule()`
+## `queries.getSchedule()`
 
-Returns the downloaded schedule for a season.
+Returns a downloaded schedule.
 
 ```ts
-const schedule = getSchedule(2025)
+const schedule = queries.getSchedule(2025)
 ```
 
 ```ts
@@ -227,19 +241,63 @@ Returns `undefined` if the season has not been downloaded.
 
 ---
 
-# Database
+## `queries.getStatExport()`
 
-Schedules and game feeds are stored in a local SQLite database.
+Returns a relational export over a date range.
 
-The package automatically:
+```ts
+const exportData = queries.getStatExport(
+    "2025-04-01",
+    "2025-04-30"
+)
+```
 
-- Creates the database on first use
-- Creates the required schema
-- Performs incremental synchronization
-- Reuses completed games
-- Refreshes games that are still in progress
+This export is intended for simulations, analytics, and machine learning workflows.
 
-No additional configuration is required beyond choosing the database location if desired.
+---
+
+## `database`
+
+The initialized `better-sqlite3` database connection is exported directly.
+
+```ts
+import { database } from "baseball-database"
+
+const rows = database
+    .prepare(`
+        SELECT *
+        FROM pitches
+        WHERE pitcher_id = ?
+    `)
+    .all(694973)
+```
+
+Because the raw SQLite connection is exposed, applications can execute arbitrary SQL without waiting for additional helper functions to be added to the library.
+
+---
+
+# Complete Example
+
+```ts
+import {
+    database,
+    downloadSeason,
+    queries
+} from "baseball-database"
+
+await downloadSeason(2025)
+
+const game = queries.getGame(777858)
+
+const pitches = database
+    .prepare(`
+        SELECT *
+        FROM pitches
+        WHERE game_pk = ?
+        ORDER BY at_bat_index, event_index
+    `)
+    .all(777858)
+```
 
 ---
 
@@ -267,9 +325,34 @@ npm run download -- 2025 --force
 
 # Data Source
 
-Schedules and game feeds are downloaded from the official MLB Stats API using the excellent `mlb-stats-api` package.
+Schedules and game feeds are downloaded from the official MLB Stats API using the `mlb-stats-api` package.
 
-All game feeds are stored exactly as returned by MLB without modification.
+All schedules and game feeds are stored exactly as returned by MLB without modification.
+
+---
+
+# Built for Analytics
+
+`baseball-database` is designed for both transactional applications and analytical workloads.
+
+Every official MLB schedule and game feed is preserved exactly as returned by the MLB Stats API while commonly queried information is extracted into relational tables for fast indexed access.
+
+The database currently contains:
+
+| Table | Purpose |
+| ------- | ------- |
+| `games` | Official game feeds with indexed metadata |
+| `schedules` | Official schedules by season |
+| `player_appearances` | Every player appearance |
+| `plate_appearances` | Every plate appearance |
+| `pitches` | Every pitch with Statcast measurements |
+| `runner_movements` | Every baserunner movement |
+| `fielding_credits` | Defensive credits |
+| `defensive_events` | Defensive substitutions and position changes |
+
+This schema makes common baseball queries straightforward without repeatedly traversing deeply nested JSON documents.
+
+Because the package exports the underlying SQLite connection, you can either use the provided query helpers or write your own SQL directly against these tables.
 
 ---
 
@@ -278,15 +361,16 @@ All game feeds are stored exactly as returned by MLB without modification.
 Nearly every baseball project eventually needs the same foundation:
 
 - Historical game feeds
-- Official schedules
+- Official season schedules
 - Local caching
 - Offline access
 - Fast queries
 - Reproducible datasets
+- Direct SQL access
 
-Rather than implementing download and caching logic in every project, `baseball-database` provides a lightweight local data layer that other applications can build upon.
+Rather than implementing download and synchronization logic in every project, `baseball-database` provides a lightweight local data layer that other applications can build upon.
 
-It is intended to serve as the data backbone for simulations, projections, betting models, visualization tools, fantasy applications, and machine learning pipelines.
+Whether you're building a simulator, projection system, fantasy application, betting model, visualization tool, or research pipeline, `baseball-database` handles the tedious work of keeping official MLB data synchronized so your application can focus on everything built on top of it.
 
 ---
 
