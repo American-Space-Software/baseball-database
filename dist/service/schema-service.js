@@ -19,9 +19,6 @@ class SchemaService {
         database.pragma("busy_timeout = 5000");
         database.pragma("foreign_keys = ON");
         if (this.databasePath !== ":memory:") {
-            // database.pragma("journal_mode = WAL")
-            // database.pragma("synchronous = NORMAL")
-            // database.pragma("wal_autocheckpoint = 10000")
             database.pragma("journal_mode = WAL");
             database.pragma("synchronous = OFF");
             database.pragma("wal_autocheckpoint = 0");
