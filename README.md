@@ -1,4 +1,4 @@
-# baseball-database
+# ⚾ baseball-database
 
 A lightweight TypeScript library for downloading, caching, and querying official MLB game data locally.
 
