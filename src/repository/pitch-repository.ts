@@ -10,6 +10,18 @@ class PitchRepository {
                 game_pk AS gamePk,
                 at_bat_index AS atBatIndex,
                 event_index AS eventIndex,
+                (
+                    SELECT plateAppearance.batter_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS batterId,
+                (
+                    SELECT plateAppearance.pitcher_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS pitcherId,
                 play_id AS playId,
                 pitch_number AS pitchNumber,
                 start_time AS startTime,
@@ -82,6 +94,8 @@ class PitchRepository {
             gamePk: number
             atBatIndex: number
             eventIndex: number
+            batterId: number
+            pitcherId: number
             playId: string | null
             pitchNumber: number | null
             startTime: string | null
@@ -152,6 +166,18 @@ class PitchRepository {
                 game_pk AS gamePk,
                 at_bat_index AS atBatIndex,
                 event_index AS eventIndex,
+                (
+                    SELECT plateAppearance.batter_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS batterId,
+                (
+                    SELECT plateAppearance.pitcher_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS pitcherId,
                 play_id AS playId,
                 pitch_number AS pitchNumber,
                 start_time AS startTime,
@@ -224,6 +250,8 @@ class PitchRepository {
             gamePk: number
             atBatIndex: number
             eventIndex: number
+            batterId: number
+            pitcherId: number
             playId: string | null
             pitchNumber: number | null
             startTime: string | null
@@ -292,6 +320,18 @@ class PitchRepository {
                 game_pk AS gamePk,
                 at_bat_index AS atBatIndex,
                 event_index AS eventIndex,
+                (
+                    SELECT plateAppearance.batter_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS batterId,
+                (
+                    SELECT plateAppearance.pitcher_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS pitcherId,
                 play_id AS playId,
                 pitch_number AS pitchNumber,
                 start_time AS startTime,
@@ -363,6 +403,8 @@ class PitchRepository {
             gamePk: number
             atBatIndex: number
             eventIndex: number
+            batterId: number
+            pitcherId: number
             playId: string | null
             pitchNumber: number | null
             startTime: string | null
@@ -431,6 +473,8 @@ class PitchRepository {
                 pitch.game_pk AS gamePk,
                 pitch.at_bat_index AS atBatIndex,
                 pitch.event_index AS eventIndex,
+                plateAppearance.batter_id AS batterId,
+                plateAppearance.pitcher_id AS pitcherId,
                 pitch.play_id AS playId,
                 pitch.pitch_number AS pitchNumber,
                 pitch.start_time AS startTime,
@@ -496,6 +540,9 @@ class PitchRepository {
                 pitch.hit_coordinate_x AS hitCoordinateX,
                 pitch.hit_coordinate_y AS hitCoordinateY
             FROM pitches pitch
+            JOIN plate_appearances plateAppearance
+                ON plateAppearance.game_pk = pitch.game_pk
+                AND plateAppearance.at_bat_index = pitch.at_bat_index
             JOIN games game
                 ON game.game_pk = pitch.game_pk
             WHERE game.game_date >= ?
@@ -509,6 +556,8 @@ class PitchRepository {
             gamePk: number
             atBatIndex: number
             eventIndex: number
+            batterId: number
+            pitcherId: number
             playId: string | null
             pitchNumber: number | null
             startTime: string | null
@@ -797,6 +846,8 @@ class PitchRepository {
         gamePk: number
         atBatIndex: number
         eventIndex: number
+        batterId: number
+        pitcherId: number
         playId: string | null
         pitchNumber: number | null
         startTime: string | null
@@ -859,6 +910,9 @@ class PitchRepository {
             gamePk: row.gamePk,
             atBatIndex: row.atBatIndex,
             eventIndex: row.eventIndex,
+            plateAppearanceId: `${row.gamePk}:${row.atBatIndex}`,
+            batterId: row.batterId,
+            pitcherId: row.pitcherId,
             playId: row.playId,
             pitchNumber: row.pitchNumber,
             startTime: row.startTime,
@@ -924,6 +978,9 @@ interface Pitch {
     gamePk: number
     atBatIndex: number
     eventIndex: number
+    plateAppearanceId: string
+    batterId: number
+    pitcherId: number
     playId: string | null
     pitchNumber: number | null
     startTime: string | null

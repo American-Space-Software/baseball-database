@@ -7,6 +7,7 @@ declare class FieldingCreditRepository {
     getByPlateAppearance(gamePk: number, atBatIndex: number): FieldingCredit[];
     getByGame(gamePk: number): FieldingCredit[];
     getByPlayer(playerId: number): FieldingCredit[];
+    getByDateRange(startDate: string, endDate: string): FieldingCredit[];
     put(fieldingCredit: FieldingCredit): void;
     deleteByGame(gamePk: number): void;
     private mapRow;

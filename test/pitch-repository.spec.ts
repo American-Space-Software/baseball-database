@@ -67,23 +67,33 @@ describe("PitchRepository", function () {
         for (const plateAppearance of [
             {
                 gamePk: 123456,
-                atBatIndex: 0
+                atBatIndex: 0,
+                batterId: 100001,
+                pitcherId: 200001
             },
             {
                 gamePk: 123456,
-                atBatIndex: 1
+                atBatIndex: 1,
+                batterId: 100002,
+                pitcherId: 200002
             },
             {
                 gamePk: 123456,
-                atBatIndex: 2
+                atBatIndex: 2,
+                batterId: 100003,
+                pitcherId: 200003
             },
             {
                 gamePk: 123457,
-                atBatIndex: 0
+                atBatIndex: 0,
+                batterId: 100004,
+                pitcherId: 200004
             },
             {
                 gamePk: 123458,
-                atBatIndex: 0
+                atBatIndex: 0,
+                batterId: 100005,
+                pitcherId: 200005
             }
         ]) {
             database.prepare(`
@@ -109,8 +119,8 @@ describe("PitchRepository", function () {
                     1,
                     'top',
                     1,
-                    100001,
-                    200001,
+                    @batterId,
+                    @pitcherId,
                     0,
                     0,
                     0,
@@ -157,6 +167,40 @@ describe("PitchRepository", function () {
                 pitch.eventIndex
             ),
             pitch
+        )
+    })
+
+    it("returns the plate appearance, batter, and pitcher identifiers", function () {
+        const pitch = createPitch(
+            123456,
+            1,
+            0,
+            1
+        )
+
+        repository.put(
+            pitch
+        )
+
+        const storedPitch = repository.get(
+            pitch.gamePk,
+            pitch.atBatIndex,
+            pitch.eventIndex
+        )
+
+        assert.equal(
+            storedPitch?.plateAppearanceId,
+            "123456:1"
+        )
+
+        assert.equal(
+            storedPitch?.batterId,
+            100002
+        )
+
+        assert.equal(
+            storedPitch?.pitcherId,
+            200002
         )
     })
 
@@ -712,16 +756,69 @@ describe("PitchRepository", function () {
         )
     })
 
+    function getPlateAppearance(gamePk: number, atBatIndex: number): { batterId: number, pitcherId: number } {
+        const plateAppearances = [
+            {
+                gamePk: 123456,
+                atBatIndex: 0,
+                batterId: 100001,
+                pitcherId: 200001
+            },
+            {
+                gamePk: 123456,
+                atBatIndex: 1,
+                batterId: 100002,
+                pitcherId: 200002
+            },
+            {
+                gamePk: 123456,
+                atBatIndex: 2,
+                batterId: 100003,
+                pitcherId: 200003
+            },
+            {
+                gamePk: 123457,
+                atBatIndex: 0,
+                batterId: 100004,
+                pitcherId: 200004
+            },
+            {
+                gamePk: 123458,
+                atBatIndex: 0,
+                batterId: 100005,
+                pitcherId: 200005
+            }
+        ]
+
+        const plateAppearance = plateAppearances.find(candidate => {
+            return candidate.gamePk === gamePk && candidate.atBatIndex === atBatIndex
+        })
+
+        if (!plateAppearance) {
+            throw new Error(`Missing test plate appearance ${gamePk}:${atBatIndex}`)
+        }
+
+        return plateAppearance
+    }
+
     function createPitch(
         gamePk: number,
         atBatIndex: number,
         eventIndex: number,
         pitchNumber: number
     ): Pitch {
+        const plateAppearance = getPlateAppearance(
+            gamePk,
+            atBatIndex
+        )
+
         return {
             gamePk,
             atBatIndex,
             eventIndex,
+            plateAppearanceId: `${gamePk}:${atBatIndex}`,
+            batterId: plateAppearance.batterId,
+            pitcherId: plateAppearance.pitcherId,
             playId: `${gamePk}-${atBatIndex}-${eventIndex}`,
             pitchNumber,
             startTime: "2026-07-20T17:05:00.000Z",

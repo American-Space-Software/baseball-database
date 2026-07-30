@@ -1,4 +1,5 @@
 class GameService {
+    schemaService;
     gameRepository;
     playerAppearanceRepository;
     plateAppearanceRepository;
@@ -6,7 +7,8 @@ class GameService {
     runnerMovementRepository;
     fieldingCreditRepository;
     defensiveEventRepository;
-    constructor(gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository) {
+    constructor(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository) {
+        this.schemaService = schemaService;
         this.gameRepository = gameRepository;
         this.playerAppearanceRepository = playerAppearanceRepository;
         this.plateAppearanceRepository = plateAppearanceRepository;
@@ -22,19 +24,21 @@ class GameService {
         return this.gameRepository.getCompletedGamePksByDateRange(startDate, endDate);
     }
     syncGame(game) {
-        this.gameRepository.put(game);
-        this.playerAppearanceRepository.deleteByGame(game.gamePk);
-        this.plateAppearanceRepository.deleteByGame(game.gamePk);
-        this.pitchRepository.deleteByGame(game.gamePk);
-        this.runnerMovementRepository.deleteByGame(game.gamePk);
-        this.fieldingCreditRepository.deleteByGame(game.gamePk);
-        this.defensiveEventRepository.deleteByGame(game.gamePk);
-        this.syncPlayerAppearances(game);
-        this.syncPlateAppearances(game);
-        this.syncPitches(game);
-        this.syncRunnerMovements(game);
-        this.syncFieldingCredits(game);
-        this.syncDefensiveEvents(game);
+        this.schemaService.transaction(() => {
+            this.gameRepository.put(game);
+            this.playerAppearanceRepository.deleteByGame(game.gamePk);
+            this.plateAppearanceRepository.deleteByGame(game.gamePk);
+            this.pitchRepository.deleteByGame(game.gamePk);
+            this.runnerMovementRepository.deleteByGame(game.gamePk);
+            this.fieldingCreditRepository.deleteByGame(game.gamePk);
+            this.defensiveEventRepository.deleteByGame(game.gamePk);
+            this.syncPlayerAppearances(game);
+            this.syncPlateAppearances(game);
+            this.syncPitches(game);
+            this.syncRunnerMovements(game);
+            this.syncFieldingCredits(game);
+            this.syncDefensiveEvents(game);
+        });
     }
     syncPlayerAppearances(game) {
         const boxscore = game.data.liveData?.boxscore;
@@ -143,7 +147,11 @@ class GameService {
     syncPitches(game) {
         for (const play of this.getAllPlays(game)) {
             const atBatIndex = Number(play?.atBatIndex ?? play?.about?.atBatIndex);
-            if (!Number.isFinite(atBatIndex)) {
+            const batterId = Number(play?.matchup?.batter?.id);
+            const pitcherId = Number(play?.matchup?.pitcher?.id);
+            if (!Number.isFinite(atBatIndex) ||
+                !Number.isFinite(batterId) ||
+                !Number.isFinite(pitcherId)) {
                 continue;
             }
             for (const [eventIndex, event] of (play?.playEvents ?? []).entries()) {
@@ -160,6 +168,9 @@ class GameService {
                     gamePk: game.gamePk,
                     atBatIndex,
                     eventIndex: persistedEventIndex,
+                    plateAppearanceId: `${game.gamePk}:${atBatIndex}`,
+                    batterId,
+                    pitcherId,
                     playId: event?.playId ?? null,
                     pitchNumber: this.numberOrNull(event?.pitchNumber),
                     startTime: event?.startTime ?? null,

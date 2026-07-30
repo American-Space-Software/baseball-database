@@ -9,6 +9,18 @@ class PitchRepository {
                 game_pk AS gamePk,
                 at_bat_index AS atBatIndex,
                 event_index AS eventIndex,
+                (
+                    SELECT plateAppearance.batter_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS batterId,
+                (
+                    SELECT plateAppearance.pitcher_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS pitcherId,
                 play_id AS playId,
                 pitch_number AS pitchNumber,
                 start_time AS startTime,
@@ -88,6 +100,18 @@ class PitchRepository {
                 game_pk AS gamePk,
                 at_bat_index AS atBatIndex,
                 event_index AS eventIndex,
+                (
+                    SELECT plateAppearance.batter_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS batterId,
+                (
+                    SELECT plateAppearance.pitcher_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS pitcherId,
                 play_id AS playId,
                 pitch_number AS pitchNumber,
                 start_time AS startTime,
@@ -165,6 +189,18 @@ class PitchRepository {
                 game_pk AS gamePk,
                 at_bat_index AS atBatIndex,
                 event_index AS eventIndex,
+                (
+                    SELECT plateAppearance.batter_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS batterId,
+                (
+                    SELECT plateAppearance.pitcher_id
+                    FROM plate_appearances plateAppearance
+                    WHERE plateAppearance.game_pk = pitches.game_pk
+                        AND plateAppearance.at_bat_index = pitches.at_bat_index
+                ) AS pitcherId,
                 play_id AS playId,
                 pitch_number AS pitchNumber,
                 start_time AS startTime,
@@ -233,6 +269,94 @@ class PitchRepository {
             WHERE game_pk = ?
             ORDER BY at_bat_index, event_index
         `).all(gamePk);
+        return rows.map(row => this.mapRow(row));
+    }
+    getByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                pitch.game_pk AS gamePk,
+                pitch.at_bat_index AS atBatIndex,
+                pitch.event_index AS eventIndex,
+                plateAppearance.batter_id AS batterId,
+                plateAppearance.pitcher_id AS pitcherId,
+                pitch.play_id AS playId,
+                pitch.pitch_number AS pitchNumber,
+                pitch.start_time AS startTime,
+                pitch.end_time AS endTime,
+
+                pitch.description,
+                pitch.code,
+                pitch.pitch_type_code AS pitchTypeCode,
+                pitch.pitch_type_description AS pitchTypeDescription,
+                pitch.call_code AS callCode,
+                pitch.call_description AS callDescription,
+
+                pitch.is_in_play AS isInPlay,
+                pitch.is_strike AS isStrike,
+                pitch.is_ball AS isBall,
+                pitch.is_scoring_play AS isScoringPlay,
+                pitch.has_review AS hasReview,
+
+                pitch.balls,
+                pitch.strikes,
+                pitch.outs,
+
+                pitch.start_speed AS startSpeed,
+                pitch.end_speed AS endSpeed,
+                pitch.strike_zone_top AS strikeZoneTop,
+                pitch.strike_zone_bottom AS strikeZoneBottom,
+                pitch.zone,
+                pitch.type_confidence AS typeConfidence,
+                pitch.plate_time AS plateTime,
+                pitch.extension,
+
+                pitch.coordinate_a_x AS coordinateAX,
+                pitch.coordinate_a_y AS coordinateAY,
+                pitch.coordinate_a_z AS coordinateAZ,
+                pitch.coordinate_pfx_x AS coordinatePfxX,
+                pitch.coordinate_pfx_z AS coordinatePfxZ,
+                pitch.coordinate_p_x AS coordinatePX,
+                pitch.coordinate_p_z AS coordinatePZ,
+                pitch.coordinate_v_x_0 AS coordinateVX0,
+                pitch.coordinate_v_y_0 AS coordinateVY0,
+                pitch.coordinate_v_z_0 AS coordinateVZ0,
+                pitch.coordinate_x AS coordinateX,
+                pitch.coordinate_x_0 AS coordinateX0,
+                pitch.coordinate_y AS coordinateY,
+                pitch.coordinate_y_0 AS coordinateY0,
+                pitch.coordinate_z_0 AS coordinateZ0,
+
+                pitch.break_angle AS breakAngle,
+                pitch.break_length AS breakLength,
+                pitch.break_y AS breakY,
+                pitch.break_vertical AS breakVertical,
+                pitch.break_vertical_induced AS breakVerticalInduced,
+                pitch.break_horizontal AS breakHorizontal,
+                pitch.spin_rate AS spinRate,
+                pitch.spin_direction AS spinDirection,
+
+                pitch.launch_speed AS launchSpeed,
+                pitch.launch_angle AS launchAngle,
+                pitch.total_distance AS totalDistance,
+                pitch.trajectory,
+                pitch.hardness,
+                pitch.hit_location AS hitLocation,
+                pitch.hit_coordinate_x AS hitCoordinateX,
+                pitch.hit_coordinate_y AS hitCoordinateY
+            FROM pitches pitch
+            JOIN plate_appearances plateAppearance
+                ON plateAppearance.game_pk = pitch.game_pk
+                AND plateAppearance.at_bat_index = pitch.at_bat_index
+            JOIN games game
+                ON game.game_pk = pitch.game_pk
+            WHERE game.game_date >= ?
+                AND game.game_date < ?
+            ORDER BY
+                game.game_date,
+                pitch.game_pk,
+                pitch.at_bat_index,
+                pitch.event_index
+        `).all(startDate, endDate);
         return rows.map(row => this.mapRow(row));
     }
     put(pitch) {
@@ -460,6 +584,9 @@ class PitchRepository {
             gamePk: row.gamePk,
             atBatIndex: row.atBatIndex,
             eventIndex: row.eventIndex,
+            plateAppearanceId: `${row.gamePk}:${row.atBatIndex}`,
+            batterId: row.batterId,
+            pitcherId: row.pitcherId,
             playId: row.playId,
             pitchNumber: row.pitchNumber,
             startTime: row.startTime,

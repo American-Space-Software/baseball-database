@@ -2,6 +2,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import MLBStatsAPI from "mlb-stats-api";
+import { DefensiveEventRepository } from "./repository/defensive-event-repository.js";
 import { FieldingCreditRepository } from "./repository/fielding-credit-repository.js";
 import { GameRepository } from "./repository/game-repository.js";
 import { PitchRepository } from "./repository/pitch-repository.js";
@@ -12,7 +13,7 @@ import { ScheduleRepository } from "./repository/schedule-repository.js";
 import { DownloadService } from "./service/download-service.js";
 import { GameService } from "./service/game-service.js";
 import { SchemaService } from "./service/schema-service.js";
-import { DefensiveEventRepository } from "./repository/defensive-event-repository.js";
+import { StatExportService } from "./service/stat-export-service.js";
 const databasePath = process.env.BASEBALL_DATABASE_PATH ??
     path.resolve(process.cwd(), "data/baseball.sqlite");
 const throttleMs = process.env.THROTTLE_MS
@@ -28,18 +29,22 @@ const runnerMovementRepository = new RunnerMovementRepository(database);
 const fieldingCreditRepository = new FieldingCreditRepository(database);
 const scheduleRepository = new ScheduleRepository(database);
 const defensiveEventRepository = new DefensiveEventRepository(database);
-const gameService = new GameService(gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
+const statExportService = new StatExportService(playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
+const gameService = new GameService(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
 const downloadService = new DownloadService(gameService, scheduleRepository, new MLBStatsAPI(), throttleMs);
-export function getGame(gamePk) {
+function getGame(gamePk) {
     return gameService.get(gamePk);
 }
-export function getSchedule(season) {
+function getSchedule(season) {
     return scheduleRepository.get(season);
 }
-export async function downloadSeason(season, force = false) {
+function getStatExport(startDate, endDate) {
+    return statExportService.getByDateRange(startDate, endDate);
+}
+async function downloadSeason(season, force = false) {
     return downloadService.syncSeason(season, force);
 }
-export async function downloadSeasons(startSeason, endSeason, force = false) {
+async function downloadSeasons(startSeason, endSeason, force = false) {
     const results = new Map();
     for (let season = startSeason; season <= endSeason; season++) {
         console.log(`\n=== Synchronizing ${season} ===`);
@@ -84,4 +89,5 @@ if (isMainModule()) {
         schemaService.close();
     });
 }
+export { downloadSeason, downloadSeasons, getGame, getSchedule, getStatExport };
 //# sourceMappingURL=index.js.map

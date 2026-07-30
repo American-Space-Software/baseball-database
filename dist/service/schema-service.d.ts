@@ -4,6 +4,7 @@ declare class SchemaService {
     private database?;
     constructor(databasePath: string);
     load(): Database;
+    transaction<T>(callback: () => T): T;
     close(): void;
 }
 export { SchemaService };

@@ -130,6 +130,7 @@ class GameServiceTestHarness {
             gamePk: 123456,
             date: "2026-07-28",
             season: 2026,
+            
             data: {
                 gameData: {
                     teams: {
@@ -613,6 +614,7 @@ describe("GameService", function () {
             {
                 gamePk: 123456,
                 atBatIndex: 7,
+                
                 inning: 3,
                 halfInning: "top",
                 isTopInning: true,
@@ -665,6 +667,9 @@ describe("GameService", function () {
                 gamePk: 123456,
                 atBatIndex: 7,
                 eventIndex: 1,
+                plateAppearanceId: "123456:7",
+                batterId: 101,
+                pitcherId: 401,
                 playId: "pitch-play-id",
                 pitchNumber: 1,
                 startTime: "2026-07-28T18:01:10.000Z",

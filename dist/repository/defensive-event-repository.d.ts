@@ -4,6 +4,7 @@ declare class DefensiveEventRepository {
     constructor(database: Database);
     get(gamePk: number, atBatIndex: number, eventIndex: number, playerId: number): DefensiveEvent | undefined;
     getByGame(gamePk: number): DefensiveEvent[];
+    getByDateRange(startDate: string, endDate: string): DefensiveEvent[];
     put(defensiveEvent: DefensiveEvent): void;
     deleteByGame(gamePk: number): void;
 }

@@ -6,7 +6,9 @@ import { PlayerAppearanceRepository } from "../repository/player-appearance-repo
 import { RunnerMovementRepository } from "../repository/runner-movement-repository.js";
 import type { Game } from "../repository/game-repository.js";
 import { DefensiveEventRepository } from "../repository/defensive-event-repository.js";
+import { SchemaService } from "./schema-service.js";
 declare class GameService {
+    private readonly schemaService;
     private readonly gameRepository;
     private readonly playerAppearanceRepository;
     private readonly plateAppearanceRepository;
@@ -14,7 +16,7 @@ declare class GameService {
     private readonly runnerMovementRepository;
     private readonly fieldingCreditRepository;
     private readonly defensiveEventRepository;
-    constructor(gameRepository: GameRepository, playerAppearanceRepository: PlayerAppearanceRepository, plateAppearanceRepository: PlateAppearanceRepository, pitchRepository: PitchRepository, runnerMovementRepository: RunnerMovementRepository, fieldingCreditRepository: FieldingCreditRepository, defensiveEventRepository: DefensiveEventRepository);
+    constructor(schemaService: SchemaService, gameRepository: GameRepository, playerAppearanceRepository: PlayerAppearanceRepository, plateAppearanceRepository: PlateAppearanceRepository, pitchRepository: PitchRepository, runnerMovementRepository: RunnerMovementRepository, fieldingCreditRepository: FieldingCreditRepository, defensiveEventRepository: DefensiveEventRepository);
     get(gamePk: number): Game | undefined;
     getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
     syncGame(game: Game): void;

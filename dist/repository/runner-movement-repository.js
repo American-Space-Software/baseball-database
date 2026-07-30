@@ -222,6 +222,45 @@ class RunnerMovementRepository {
             WHERE game_pk = ?
         `).run(gamePk);
     }
+    getByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                runner_movement.game_pk AS gamePk,
+                runner_movement.at_bat_index AS atBatIndex,
+                runner_movement.runner_index AS runnerIndex,
+                runner_movement.play_index AS playIndex,
+
+                runner_movement.runner_id AS runnerId,
+                runner_movement.responsible_pitcher_id AS responsiblePitcherId,
+
+                runner_movement.event,
+                runner_movement.event_type AS eventType,
+                runner_movement.movement_reason AS movementReason,
+
+                runner_movement.origin_base AS originBase,
+                runner_movement.start_base AS startBase,
+                runner_movement.end_base AS endBase,
+                runner_movement.out_base AS outBase,
+
+                runner_movement.is_out AS isOut,
+                runner_movement.out_number AS outNumber,
+                runner_movement.is_scoring_event AS isScoringEvent,
+                runner_movement.rbi,
+                runner_movement.earned,
+                runner_movement.team_unearned AS teamUnearned
+            FROM runner_movements runner_movement
+            JOIN games game
+                ON game.game_pk = runner_movement.game_pk
+            WHERE game.game_date >= ?
+                AND game.game_date < ?
+            ORDER BY
+                game.game_date,
+                runner_movement.game_pk,
+                runner_movement.at_bat_index,
+                runner_movement.runner_index
+        `).all(startDate, endDate);
+        return rows.map(row => this.mapRow(row));
+    }
     mapRow(row) {
         return {
             gamePk: row.gamePk,

@@ -5,6 +5,7 @@ declare class PitchRepository {
     get(gamePk: number, atBatIndex: number, eventIndex: number): Pitch | undefined;
     getByPlateAppearance(gamePk: number, atBatIndex: number): Pitch[];
     getByGame(gamePk: number): Pitch[];
+    getByDateRange(startDate: string, endDate: string): Pitch[];
     put(pitch: Pitch): void;
     deleteByGame(gamePk: number): void;
     private mapRow;
@@ -13,6 +14,9 @@ interface Pitch {
     gamePk: number;
     atBatIndex: number;
     eventIndex: number;
+    plateAppearanceId: string;
+    batterId: number;
+    pitcherId: number;
     playId: string | null;
     pitchNumber: number | null;
     startTime: string | null;

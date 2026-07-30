@@ -6,6 +6,7 @@ declare class PlateAppearanceRepository {
     getByGame(gamePk: number): PlateAppearance[];
     getByBatter(playerId: number): PlateAppearance[];
     getByPitcher(playerId: number): PlateAppearance[];
+    getByDateRange(startDate: string, endDate: string): PlateAppearance[];
     put(plateAppearance: PlateAppearance): void;
     deleteByGame(gamePk: number): void;
     private mapRow;

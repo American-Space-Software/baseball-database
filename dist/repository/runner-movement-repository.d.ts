@@ -8,6 +8,7 @@ declare class RunnerMovementRepository {
     getByRunner(playerId: number): RunnerMovement[];
     put(runnerMovement: RunnerMovement): void;
     deleteByGame(gamePk: number): void;
+    getByDateRange(startDate: string, endDate: string): RunnerMovement[];
     private mapRow;
 }
 interface RunnerMovement {

@@ -42,6 +42,23 @@ class GameRepository {
         `).all(...gamePks);
         return rows.map(row => this.mapRow(row));
     }
+    getByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                game_pk AS gamePk,
+                data,
+                game_date AS gameDate,
+                abstract_game_state AS abstractGameState,
+                coded_game_state AS codedGameState,
+                detailed_state AS detailedState,
+                status_code AS statusCode
+            FROM games
+            WHERE game_date >= ?
+                AND game_date < ?
+            ORDER BY game_date, game_pk
+        `).all(startDate, endDate);
+        return rows.map(row => this.mapRow(row));
+    }
     getCompletedByDate(date) {
         const rows = this.database.prepare(`
             SELECT
@@ -66,22 +83,30 @@ class GameRepository {
         `).all(date);
         return rows.map(row => this.mapRow(row));
     }
-    put(game) {
-        this.database.prepare(`
-            INSERT INTO games (
-                game_pk,
-                data
-            )
-            VALUES (
-                @gamePk,
-                @data
-            )
-            ON CONFLICT(game_pk) DO UPDATE SET
-                data = excluded.data
-        `).run({
-            gamePk: game.gamePk,
-            data: JSON.stringify(game.data)
-        });
+    getCompletedByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                game_pk AS gamePk,
+                data,
+                game_date AS gameDate,
+                abstract_game_state AS abstractGameState,
+                coded_game_state AS codedGameState,
+                detailed_state AS detailedState,
+                status_code AS statusCode
+            FROM games
+            WHERE game_date >= ?
+                AND game_date < ?
+                AND abstract_game_state = 'Final'
+                AND detailed_state NOT IN (
+                    'Postponed',
+                    'Cancelled',
+                    'Suspended'
+                )
+                AND coded_game_state <> 'D'
+                AND status_code <> 'DR'
+            ORDER BY game_date, game_pk
+        `).all(startDate, endDate);
+        return rows.map(row => this.mapRow(row));
     }
     getCompletedGamePksByDate(date) {
         const rows = this.database.prepare(`
@@ -107,7 +132,7 @@ class GameRepository {
                 game_pk AS gamePk
             FROM games
             WHERE game_date >= ?
-                AND game_date <= ?
+                AND game_date < ?
                 AND abstract_game_state = 'Final'
                 AND detailed_state NOT IN (
                     'Postponed',
@@ -119,6 +144,23 @@ class GameRepository {
             ORDER BY game_date, game_pk
         `).all(startDate, endDate);
         return rows.map(row => row.gamePk);
+    }
+    put(game) {
+        this.database.prepare(`
+            INSERT INTO games (
+                game_pk,
+                data
+            )
+            VALUES (
+                @gamePk,
+                @data
+            )
+            ON CONFLICT(game_pk) DO UPDATE SET
+                data = excluded.data
+        `).run({
+            gamePk: game.gamePk,
+            data: JSON.stringify(game.data)
+        });
     }
     mapRow(row) {
         return {

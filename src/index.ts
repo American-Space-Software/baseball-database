@@ -5,6 +5,7 @@ import { fileURLToPath } from "url"
 
 import MLBStatsAPI from "mlb-stats-api"
 
+import { DefensiveEventRepository } from "./repository/defensive-event-repository.js"
 import { FieldingCreditRepository } from "./repository/fielding-credit-repository.js"
 import { GameRepository } from "./repository/game-repository.js"
 import { PitchRepository } from "./repository/pitch-repository.js"
@@ -16,7 +17,7 @@ import { ScheduleRepository } from "./repository/schedule-repository.js"
 import { DownloadService } from "./service/download-service.js"
 import { GameService } from "./service/game-service.js"
 import { SchemaService } from "./service/schema-service.js"
-import { DefensiveEventRepository } from "./repository/defensive-event-repository.js"
+import { StatExportService } from "./service/stat-export-service.js"
 
 const databasePath =
     process.env.BASEBALL_DATABASE_PATH ??
@@ -38,7 +39,17 @@ const fieldingCreditRepository = new FieldingCreditRepository(database)
 const scheduleRepository = new ScheduleRepository(database)
 const defensiveEventRepository = new DefensiveEventRepository(database)
 
+const statExportService = new StatExportService(
+    playerAppearanceRepository,
+    plateAppearanceRepository,
+    pitchRepository,
+    runnerMovementRepository,
+    fieldingCreditRepository,
+    defensiveEventRepository
+)
+
 const gameService = new GameService(
+    schemaService,
     gameRepository,
     playerAppearanceRepository,
     plateAppearanceRepository,
@@ -55,19 +66,23 @@ const downloadService = new DownloadService(
     throttleMs
 )
 
-export function getGame(gamePk: number) {
+function getGame(gamePk: number) {
     return gameService.get(gamePk)
 }
 
-export function getSchedule(season: number) {
+function getSchedule(season: number) {
     return scheduleRepository.get(season)
 }
 
-export async function downloadSeason(season: number, force = false): Promise<Set<number>> {
+function getStatExport(startDate: string, endDate: string) {
+    return statExportService.getByDateRange(startDate, endDate)
+}
+
+async function downloadSeason(season: number, force = false): Promise<Set<number>> {
     return downloadService.syncSeason(season, force)
 }
 
-export async function downloadSeasons(startSeason: number, endSeason: number, force = false): Promise<Map<number, Set<number>>> {
+async function downloadSeasons(startSeason: number, endSeason: number, force = false): Promise<Map<number, Set<number>>> {
     const results = new Map<number, Set<number>>()
 
     for (let season = startSeason; season <= endSeason; season++) {
@@ -140,4 +155,12 @@ if (isMainModule()) {
         .finally(() => {
             schemaService.close()
         })
+}
+
+export {
+    downloadSeason,
+    downloadSeasons,
+    getGame,
+    getSchedule,
+    getStatExport
 }

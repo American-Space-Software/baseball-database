@@ -129,6 +129,43 @@ class PlateAppearanceRepository {
         `).all(playerId);
         return rows.map(row => this.mapRow(row));
     }
+    getByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                plate_appearance.game_pk AS gamePk,
+                plate_appearance.at_bat_index AS atBatIndex,
+                plate_appearance.inning,
+                plate_appearance.half_inning AS halfInning,
+                plate_appearance.is_top_inning AS isTopInning,
+                plate_appearance.batter_id AS batterId,
+                plate_appearance.pitcher_id AS pitcherId,
+                plate_appearance.bat_side_code AS batSideCode,
+                plate_appearance.pitch_hand_code AS pitchHandCode,
+                plate_appearance.result_type AS resultType,
+                plate_appearance.event,
+                plate_appearance.event_type AS eventType,
+                plate_appearance.description,
+                plate_appearance.rbi,
+                plate_appearance.away_score AS awayScore,
+                plate_appearance.home_score AS homeScore,
+                plate_appearance.balls,
+                plate_appearance.strikes,
+                plate_appearance.outs,
+                plate_appearance.start_time AS startTime,
+                plate_appearance.end_time AS endTime,
+                plate_appearance.is_complete AS isComplete
+            FROM plate_appearances plate_appearance
+            JOIN games game
+                ON game.game_pk = plate_appearance.game_pk
+            WHERE game.game_date >= ?
+                AND game.game_date < ?
+            ORDER BY
+                game.game_date,
+                plate_appearance.game_pk,
+                plate_appearance.at_bat_index
+        `).all(startDate, endDate);
+        return rows.map(row => this.mapRow(row));
+    }
     put(plateAppearance) {
         this.database.prepare(`
             INSERT INTO plate_appearances (

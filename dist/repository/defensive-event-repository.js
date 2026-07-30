@@ -41,6 +41,30 @@ class DefensiveEventRepository {
                 player_id
         `).all(gamePk);
     }
+    getByDateRange(startDate, endDate) {
+        return this.database.prepare(`
+            SELECT
+                defensive_event.game_pk AS gamePk,
+                defensive_event.at_bat_index AS atBatIndex,
+                defensive_event.event_index AS eventIndex,
+                defensive_event.team_id AS teamId,
+                defensive_event.player_id AS playerId,
+                defensive_event.event_type AS eventType,
+                defensive_event.from_position AS fromPosition,
+                defensive_event.to_position AS toPosition
+            FROM defensive_events defensive_event
+            JOIN games game
+                ON game.game_pk = defensive_event.game_pk
+            WHERE game.game_date >= ?
+                AND game.game_date < ?
+            ORDER BY
+                game.game_date,
+                defensive_event.game_pk,
+                defensive_event.at_bat_index,
+                defensive_event.event_index,
+                defensive_event.player_id
+        `).all(startDate, endDate);
+    }
     put(defensiveEvent) {
         this.database.prepare(`
             INSERT INTO defensive_events (

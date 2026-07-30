@@ -62,6 +62,32 @@ class PlayerAppearanceRepository {
         `).all(playerId);
         return rows.map(row => this.mapRow(row));
     }
+    getByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                player_appearance.game_pk AS gamePk,
+                player_appearance.player_id AS playerId,
+                player_appearance.team_id AS teamId,
+                player_appearance.appeared_as_batter AS appearedAsBatter,
+                player_appearance.appeared_as_pitcher AS appearedAsPitcher,
+                player_appearance.appeared_as_runner AS appearedAsRunner,
+                player_appearance.appeared_as_fielder AS appearedAsFielder,
+                player_appearance.started_as_batter AS startedAsBatter,
+                player_appearance.started_as_pitcher AS startedAsPitcher,
+                player_appearance.started_as_fielder AS startedAsFielder
+            FROM player_appearances player_appearance
+            JOIN games game
+                ON game.game_pk = player_appearance.game_pk
+            WHERE game.game_date >= ?
+                AND game.game_date < ?
+            ORDER BY
+                game.game_date,
+                player_appearance.game_pk,
+                player_appearance.team_id,
+                player_appearance.player_id
+        `).all(startDate, endDate);
+        return rows.map(row => this.mapRow(row));
+    }
     put(appearance) {
         this.database.prepare(`
             INSERT INTO player_appearances (

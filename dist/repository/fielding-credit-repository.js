@@ -105,6 +105,33 @@ class FieldingCreditRepository {
         `).all(playerId);
         return rows.map(row => this.mapRow(row));
     }
+    getByDateRange(startDate, endDate) {
+        const rows = this.database.prepare(`
+            SELECT
+                fielding_credit.game_pk AS gamePk,
+                fielding_credit.at_bat_index AS atBatIndex,
+                fielding_credit.runner_index AS runnerIndex,
+                fielding_credit.credit_index AS creditIndex,
+                fielding_credit.player_id AS playerId,
+                fielding_credit.credit,
+                fielding_credit.position_code AS positionCode,
+                fielding_credit.position_name AS positionName,
+                fielding_credit.position_type AS positionType,
+                fielding_credit.position_abbreviation AS positionAbbreviation
+            FROM fielding_credits fielding_credit
+            JOIN games game
+                ON game.game_pk = fielding_credit.game_pk
+            WHERE game.game_date >= ?
+                AND game.game_date < ?
+            ORDER BY
+                game.game_date,
+                fielding_credit.game_pk,
+                fielding_credit.at_bat_index,
+                fielding_credit.runner_index,
+                fielding_credit.credit_index
+        `).all(startDate, endDate);
+        return rows.map(row => this.mapRow(row));
+    }
     put(fieldingCredit) {
         this.database.prepare(`
             INSERT INTO fielding_credits (

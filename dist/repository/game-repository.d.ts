@@ -5,10 +5,12 @@ declare class GameRepository {
     constructor(database: Database);
     get(gamePk: number): Game | undefined;
     getByPks(gamePks: number[]): Game[];
+    getByDateRange(startDate: string, endDate: string): Game[];
     getCompletedByDate(date: string): Game[];
-    put(game: Game): void;
+    getCompletedByDateRange(startDate: string, endDate: string): Game[];
     getCompletedGamePksByDate(date: string): number[];
     getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
+    put(game: Game): void;
     private mapRow;
 }
 interface Game {

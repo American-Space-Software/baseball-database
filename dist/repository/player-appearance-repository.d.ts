@@ -5,6 +5,7 @@ declare class PlayerAppearanceRepository {
     get(gamePk: number, playerId: number): PlayerAppearance | undefined;
     getByGame(gamePk: number): PlayerAppearance[];
     getByPlayer(playerId: number): PlayerAppearance[];
+    getByDateRange(startDate: string, endDate: string): PlayerAppearance[];
     put(appearance: PlayerAppearance): void;
     deleteByGame(gamePk: number): void;
     private mapRow;
