@@ -1,11 +1,13 @@
 class StatExportService {
+    gameRepository;
     playerAppearanceRepository;
     plateAppearanceRepository;
     pitchRepository;
     runnerMovementRepository;
     fieldingCreditRepository;
     defensiveEventRepository;
-    constructor(playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository) {
+    constructor(gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository) {
+        this.gameRepository = gameRepository;
         this.playerAppearanceRepository = playerAppearanceRepository;
         this.plateAppearanceRepository = plateAppearanceRepository;
         this.pitchRepository = pitchRepository;
@@ -15,6 +17,7 @@ class StatExportService {
     }
     getByDateRange(startDate, endDate) {
         return {
+            games: this.gameRepository.getGameDatesByDateRange(startDate, endDate),
             appearances: this.playerAppearanceRepository.getByDateRange(startDate, endDate),
             plateAppearances: this.plateAppearanceRepository.getByDateRange(startDate, endDate),
             pitches: this.pitchRepository.getByDateRange(startDate, endDate),

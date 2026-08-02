@@ -162,6 +162,17 @@ class GameRepository {
             data: JSON.stringify(game.data)
         });
     }
+    getGameDatesByDateRange(startDate, endDate) {
+        return this.database.prepare(`
+            SELECT
+                game_pk AS gamePk,
+                game_date AS gameDate
+            FROM games
+            WHERE game_date >= ?
+            AND game_date < ?
+            ORDER BY game_date, game_pk
+        `).all(startDate, endDate);
+    }
     mapRow(row) {
         return {
             gamePk: row.gamePk,

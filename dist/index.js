@@ -29,7 +29,7 @@ const runnerMovementRepository = new RunnerMovementRepository(database);
 const fieldingCreditRepository = new FieldingCreditRepository(database);
 const scheduleRepository = new ScheduleRepository(database);
 const defensiveEventRepository = new DefensiveEventRepository(database);
-const statExportService = new StatExportService(playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
+const statExportService = new StatExportService(gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
 const gameService = new GameService(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
 const downloadService = new DownloadService(gameService, scheduleRepository, new MLBStatsAPI(), throttleMs);
 function getGame(gamePk) {

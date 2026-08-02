@@ -181,6 +181,19 @@ class GameRepository {
         })
     }
 
+    public getGameDatesByDateRange(startDate: string, endDate: string): GameDate[] {
+        return this.database.prepare(`
+            SELECT
+                game_pk AS gamePk,
+                game_date AS gameDate
+            FROM games
+            WHERE game_date >= ?
+            AND game_date < ?
+            ORDER BY game_date, game_pk
+        `).all(startDate, endDate) as GameDate[]
+    }
+
+
     private mapRow(row: GameRow): Game {
         return {
             gamePk: row.gamePk,
@@ -214,10 +227,16 @@ interface GameRow {
     statusCode: string | null
 }
 
+
+interface GameDate {
+    gamePk: number
+    gameDate: string
+}
+
 export {
     GameRepository
 }
 
 export type {
-    Game
+    Game, GameDate
 }

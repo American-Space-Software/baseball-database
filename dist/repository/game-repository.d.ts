@@ -11,6 +11,7 @@ declare class GameRepository {
     getCompletedGamePksByDate(date: string): number[];
     getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
     put(game: Game): void;
+    getGameDatesByDateRange(startDate: string, endDate: string): GameDate[];
     private mapRow;
 }
 interface Game {
@@ -22,6 +23,10 @@ interface Game {
     detailedState?: string | null;
     statusCode?: string | null;
 }
+interface GameDate {
+    gamePk: number;
+    gameDate: string;
+}
 export { GameRepository };
-export type { Game };
+export type { Game, GameDate };
 //# sourceMappingURL=game-repository.d.ts.map

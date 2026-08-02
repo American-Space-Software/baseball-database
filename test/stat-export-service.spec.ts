@@ -9,6 +9,22 @@ import type { PlateAppearance } from "../src/repository/plate-appearance-reposit
 import type { PlayerAppearance } from "../src/repository/player-appearance-repository.js"
 import type { RunnerMovement } from "../src/repository/runner-movement-repository.js"
 import { StatExportService } from "../src/service/stat-export-service.js"
+import { GameRepository } from "../src/repository/game-repository.js"
+
+interface StatExportGame {
+    gamePk: number
+    gameDate: string
+}
+
+interface StatExportServiceTestData {
+    games: StatExportGame[]
+    appearances: PlayerAppearance[]
+    plateAppearances: PlateAppearance[]
+    pitches: Pitch[]
+    runnerMovements: RunnerMovement[]
+    fieldingCredits: FieldingCredit[]
+    defensiveEvents: DefensiveEvent[]
+}
 
 class DateRangeRepositoryTestDouble<T> {
 
@@ -18,21 +34,27 @@ class DateRangeRepositoryTestDouble<T> {
 
     public getByDateRange(startDate: string, endDate: string): T[] {
         this.calls.push({ startDate, endDate })
+
         return this.results
     }
 }
 
-interface StatExportServiceTestData {
-    appearances: PlayerAppearance[]
-    plateAppearances: PlateAppearance[]
-    pitches: Pitch[]
-    runnerMovements: RunnerMovement[]
-    fieldingCredits: FieldingCredit[]
-    defensiveEvents: DefensiveEvent[]
+class GameDateRepositoryTestDouble {
+
+    public readonly calls: { startDate: string, endDate: string }[] = []
+
+    public constructor(private readonly results: StatExportGame[]) {}
+
+    public getGameDatesByDateRange(startDate: string, endDate: string): StatExportGame[] {
+        this.calls.push({ startDate, endDate })
+
+        return this.results
+    }
 }
 
 class StatExportServiceTestHarness {
 
+    public readonly gameRepository: GameDateRepositoryTestDouble
     public readonly playerAppearanceRepository: DateRangeRepositoryTestDouble<PlayerAppearance>
     public readonly plateAppearanceRepository: DateRangeRepositoryTestDouble<PlateAppearance>
     public readonly pitchRepository: DateRangeRepositoryTestDouble<Pitch>
@@ -42,6 +64,7 @@ class StatExportServiceTestHarness {
     public readonly service: StatExportService
 
     public constructor(data: StatExportServiceTestData) {
+        this.gameRepository = new GameDateRepositoryTestDouble(data.games)
         this.playerAppearanceRepository = new DateRangeRepositoryTestDouble(data.appearances)
         this.plateAppearanceRepository = new DateRangeRepositoryTestDouble(data.plateAppearances)
         this.pitchRepository = new DateRangeRepositoryTestDouble(data.pitches)
@@ -50,6 +73,7 @@ class StatExportServiceTestHarness {
         this.defensiveEventRepository = new DateRangeRepositoryTestDouble(data.defensiveEvents)
 
         this.service = new StatExportService(
+            this.gameRepository as any,
             this.playerAppearanceRepository as any,
             this.plateAppearanceRepository as any,
             this.pitchRepository as any,
@@ -63,6 +87,13 @@ class StatExportServiceTestHarness {
 describe("StatExportService", () => {
 
     it("returns every normalized record in the requested date range", () => {
+        const games = [
+            {
+                gamePk: 100,
+                gameDate: "2026-07-15"
+            }
+        ]
+
         const appearances = [
             {
                 gamePk: 100,
@@ -160,6 +191,7 @@ describe("StatExportService", () => {
         ] as DefensiveEvent[]
 
         const harness = new StatExportServiceTestHarness({
+            games,
             appearances,
             plateAppearances,
             pitches,
@@ -168,9 +200,13 @@ describe("StatExportService", () => {
             defensiveEvents
         })
 
-        const result = harness.service.getByDateRange("2026-07-01", "2026-08-01")
+        const result = harness.service.getByDateRange(
+            "2026-07-01",
+            "2026-08-01"
+        )
 
         assert.deepEqual(result, {
+            games,
             appearances,
             plateAppearances,
             pitches,
@@ -181,6 +217,13 @@ describe("StatExportService", () => {
     })
 
     it("does not filter records by player", () => {
+        const games = [
+            {
+                gamePk: 100,
+                gameDate: "2026-07-15"
+            }
+        ]
+
         const appearances = [
             {
                 gamePk: 100,
@@ -229,6 +272,7 @@ describe("StatExportService", () => {
         ] as Pitch[]
 
         const harness = new StatExportServiceTestHarness({
+            games,
             appearances,
             plateAppearances,
             pitches,
@@ -237,8 +281,12 @@ describe("StatExportService", () => {
             defensiveEvents: []
         })
 
-        const result = harness.service.getByDateRange("2026-07-01", "2026-08-01")
+        const result = harness.service.getByDateRange(
+            "2026-07-01",
+            "2026-08-01"
+        )
 
+        assert.deepEqual(result.games, games)
         assert.deepEqual(result.appearances, appearances)
         assert.deepEqual(result.plateAppearances, plateAppearances)
         assert.deepEqual(result.pitches, pitches)
@@ -246,6 +294,7 @@ describe("StatExportService", () => {
 
     it("loads each repository once using the requested date range", () => {
         const harness = new StatExportServiceTestHarness({
+            games: [],
             appearances: [],
             plateAppearances: [],
             pitches: [],
@@ -254,13 +303,19 @@ describe("StatExportService", () => {
             defensiveEvents: []
         })
 
-        harness.service.getByDateRange("2026-07-01", "2026-08-01")
+        harness.service.getByDateRange(
+            "2026-07-01",
+            "2026-08-01"
+        )
 
-        const expectedCalls = [{
-            startDate: "2026-07-01",
-            endDate: "2026-08-01"
-        }]
+        const expectedCalls = [
+            {
+                startDate: "2026-07-01",
+                endDate: "2026-08-01"
+            }
+        ]
 
+        assert.deepEqual(harness.gameRepository.calls, expectedCalls)
         assert.deepEqual(harness.playerAppearanceRepository.calls, expectedCalls)
         assert.deepEqual(harness.plateAppearanceRepository.calls, expectedCalls)
         assert.deepEqual(harness.pitchRepository.calls, expectedCalls)
@@ -271,6 +326,7 @@ describe("StatExportService", () => {
 
     it("returns empty collections when the date range has no records", () => {
         const harness = new StatExportServiceTestHarness({
+            games: [],
             appearances: [],
             plateAppearances: [],
             pitches: [],
@@ -279,9 +335,13 @@ describe("StatExportService", () => {
             defensiveEvents: []
         })
 
-        const result = harness.service.getByDateRange("2026-07-01", "2026-08-01")
+        const result = harness.service.getByDateRange(
+            "2026-07-01",
+            "2026-08-01"
+        )
 
         assert.deepEqual(result, {
+            games: [],
             appearances: [],
             plateAppearances: [],
             pitches: [],

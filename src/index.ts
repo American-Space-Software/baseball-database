@@ -41,6 +41,7 @@ const scheduleRepository = new ScheduleRepository(database)
 const defensiveEventRepository = new DefensiveEventRepository(database)
 
 const statExportService = new StatExportService(
+    gameRepository,
     playerAppearanceRepository,
     plateAppearanceRepository,
     pitchRepository,

@@ -2,6 +2,7 @@ import type { DefensiveEvent } from "../repository/defensive-event-repository.js
 import { DefensiveEventRepository } from "../repository/defensive-event-repository.js"
 import type { FieldingCredit } from "../repository/fielding-credit-repository.js"
 import { FieldingCreditRepository } from "../repository/fielding-credit-repository.js"
+import { GameDate, GameRepository } from "../repository/game-repository.js"
 import type { Pitch } from "../repository/pitch-repository.js"
 import { PitchRepository } from "../repository/pitch-repository.js"
 import type { PlateAppearance } from "../repository/plate-appearance-repository.js"
@@ -12,6 +13,7 @@ import type { RunnerMovement } from "../repository/runner-movement-repository.js
 import { RunnerMovementRepository } from "../repository/runner-movement-repository.js"
 
 interface StatExport {
+    games: GameDate[]
     appearances: PlayerAppearance[]
     plateAppearances: PlateAppearance[]
     pitches: Pitch[]
@@ -20,9 +22,12 @@ interface StatExport {
     defensiveEvents: DefensiveEvent[]
 }
 
+
+
 class StatExportService {
 
     public constructor(
+        private readonly gameRepository:GameRepository,
         private readonly playerAppearanceRepository: PlayerAppearanceRepository,
         private readonly plateAppearanceRepository: PlateAppearanceRepository,
         private readonly pitchRepository: PitchRepository,
@@ -33,6 +38,7 @@ class StatExportService {
 
     public getByDateRange(startDate: string, endDate: string): StatExport {
         return {
+            games: this.gameRepository.getGameDatesByDateRange(startDate, endDate),
             appearances: this.playerAppearanceRepository.getByDateRange(startDate, endDate),
             plateAppearances: this.plateAppearanceRepository.getByDateRange(startDate, endDate),
             pitches: this.pitchRepository.getByDateRange(startDate, endDate),

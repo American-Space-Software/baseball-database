@@ -910,6 +910,137 @@ describe("GameRepository", function () {
         )
     })
 
+    it("returns game dates within the requested date range", function () {
+        const beforeRange = createGame(
+            1,
+            "2026-07-19",
+            "Final",
+            "Final",
+            "F",
+            "F"
+        )
+
+        const firstGame = createGame(
+            2,
+            "2026-07-20",
+            "Preview",
+            "Preview",
+            "P",
+            "P"
+        )
+
+        const secondGame = createGame(
+            3,
+            "2026-07-21",
+            "Final",
+            "Final",
+            "F",
+            "F"
+        )
+
+        const endDateGame = createGame(
+            4,
+            "2026-07-22",
+            "Final",
+            "Final",
+            "F",
+            "F"
+        )
+
+        repository.put(beforeRange)
+        repository.put(firstGame)
+        repository.put(secondGame)
+        repository.put(endDateGame)
+
+        assert.deepEqual(
+            repository.getGameDatesByDateRange(
+                "2026-07-20",
+                "2026-07-22"
+            ),
+            [
+                {
+                    gamePk: 2,
+                    gameDate: "2026-07-20"
+                },
+                {
+                    gamePk: 3,
+                    gameDate: "2026-07-21"
+                }
+            ]
+        )
+    })
+
+    it("returns game dates ordered by date and game PK", function () {
+        repository.put(
+            createGame(
+                20,
+                "2026-07-21",
+                "Final",
+                "Final",
+                "F",
+                "F"
+            )
+        )
+
+        repository.put(
+            createGame(
+                30,
+                "2026-07-20",
+                "Final",
+                "Final",
+                "F",
+                "F"
+            )
+        )
+
+        repository.put(
+            createGame(
+                10,
+                "2026-07-21",
+                "Final",
+                "Final",
+                "F",
+                "F"
+            )
+        )
+
+        repository.put(
+            createGame(
+                5,
+                "2026-07-20",
+                "Final",
+                "Final",
+                "F",
+                "F"
+            )
+        )
+
+        assert.deepEqual(
+            repository.getGameDatesByDateRange(
+                "2026-07-20",
+                "2026-07-22"
+            ),
+            [
+                {
+                    gamePk: 5,
+                    gameDate: "2026-07-20"
+                },
+                {
+                    gamePk: 30,
+                    gameDate: "2026-07-20"
+                },
+                {
+                    gamePk: 10,
+                    gameDate: "2026-07-21"
+                },
+                {
+                    gamePk: 20,
+                    gameDate: "2026-07-21"
+                }
+            ]
+        )
+    })
+
     function createGame(gamePk: number, gameDate: string, abstractGameState: string, detailedState: string, codedGameState: string, statusCode: string): Game {
         return {
             gamePk,
