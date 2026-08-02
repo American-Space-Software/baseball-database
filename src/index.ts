@@ -5,19 +5,19 @@ import { fileURLToPath } from "url"
 
 import MLBStatsAPI from "mlb-stats-api"
 
-import { DefensiveEventRepository } from "./repository/defensive-event-repository.js"
-import { FieldingCreditRepository } from "./repository/fielding-credit-repository.js"
+import { DefensiveEvent, DefensiveEventRepository } from "./repository/defensive-event-repository.js"
+import { FieldingCredit, FieldingCreditRepository } from "./repository/fielding-credit-repository.js"
 import { GameRepository } from "./repository/game-repository.js"
-import { PitchRepository } from "./repository/pitch-repository.js"
-import { PlateAppearanceRepository } from "./repository/plate-appearance-repository.js"
-import { PlayerAppearanceRepository } from "./repository/player-appearance-repository.js"
-import { RunnerMovementRepository } from "./repository/runner-movement-repository.js"
-import { ScheduleRepository } from "./repository/schedule-repository.js"
+import { Pitch, PitchRepository } from "./repository/pitch-repository.js"
+import { PlateAppearance, PlateAppearanceRepository } from "./repository/plate-appearance-repository.js"
+import { PlayerAppearance, PlayerAppearanceRepository } from "./repository/player-appearance-repository.js"
+import { RunnerMovement, RunnerMovementRepository } from "./repository/runner-movement-repository.js"
+import { Schedule, ScheduleRepository } from "./repository/schedule-repository.js"
 
 import { DownloadService } from "./service/download-service.js"
 import { GameService } from "./service/game-service.js"
 import { SchemaService } from "./service/schema-service.js"
-import { StatExportService } from "./service/stat-export-service.js"
+import { StatExport, StatExportService } from "./service/stat-export-service.js"
 import type BetterSqlite3 from "better-sqlite3"
 
 const databasePath =
@@ -169,4 +169,15 @@ export {
     downloadSeasons,
     queries,
     database
+}
+
+export type {
+    StatExport,
+    FieldingCredit,
+    Pitch,
+    PlateAppearance,
+    PlayerAppearance, 
+    RunnerMovement,
+    DefensiveEvent,
+    Schedule
 }
