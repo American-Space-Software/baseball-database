@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3";
+import { RunnerMovement } from "./interfaces.js";
 declare class RunnerMovementRepository {
     private readonly database;
     constructor(database: Database);
@@ -11,27 +12,5 @@ declare class RunnerMovementRepository {
     getByDateRange(startDate: string, endDate: string): RunnerMovement[];
     private mapRow;
 }
-interface RunnerMovement {
-    gamePk: number;
-    atBatIndex: number;
-    runnerIndex: number;
-    playIndex: number | null;
-    runnerId: number;
-    responsiblePitcherId: number | null;
-    event: string | null;
-    eventType: string | null;
-    movementReason: string | null;
-    originBase: string | null;
-    startBase: string | null;
-    endBase: string | null;
-    outBase: string | null;
-    isOut: boolean;
-    outNumber: number | null;
-    isScoringEvent: boolean;
-    rbi: number;
-    earned: boolean;
-    teamUnearned: boolean;
-}
 export { RunnerMovementRepository };
-export type { RunnerMovement };
 //# sourceMappingURL=runner-movement-repository.d.ts.map

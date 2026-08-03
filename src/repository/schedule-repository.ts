@@ -1,5 +1,6 @@
 import type { Database } from "better-sqlite3"
 import type { ScheduleResponse } from "mlb-stats-api"
+import { Schedule } from "./interfaces.js"
 
 class ScheduleRepository {
 
@@ -53,16 +54,7 @@ class ScheduleRepository {
     }
 }
 
-interface Schedule {
-    season: number
-    data: ScheduleResponse
-    downloadedAt: string
-}
 
 export {
     ScheduleRepository
-}
-
-export type {
-    Schedule
 }

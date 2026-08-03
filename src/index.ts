@@ -2,22 +2,32 @@
 
 import path from "path"
 import { fileURLToPath } from "url"
-
+import fs from "fs"
 import MLBStatsAPI from "mlb-stats-api"
 
 import { DefensiveEvent, DefensiveEventRepository } from "./repository/defensive-event-repository.js"
 import { FieldingCredit, FieldingCreditRepository } from "./repository/fielding-credit-repository.js"
 import { GameRepository } from "./repository/game-repository.js"
-import { Pitch, PitchRepository } from "./repository/pitch-repository.js"
-import { PlateAppearance, PlateAppearanceRepository } from "./repository/plate-appearance-repository.js"
-import { PlayerAppearance, PlayerAppearanceRepository } from "./repository/player-appearance-repository.js"
-import { RunnerMovement, RunnerMovementRepository } from "./repository/runner-movement-repository.js"
-import { Schedule, ScheduleRepository } from "./repository/schedule-repository.js"
+import {  PitchRepository } from "./repository/pitch-repository.js"
+import {  PlateAppearanceRepository } from "./repository/plate-appearance-repository.js"
+import {  PlayerAppearanceRepository } from "./repository/player-appearance-repository.js"
+import {  RunnerMovementRepository } from "./repository/runner-movement-repository.js"
+import {  ScheduleRepository } from "./repository/schedule-repository.js"
 
 import { DownloadService } from "./service/download-service.js"
 import { GameService } from "./service/game-service.js"
 import { SchemaService } from "./service/schema-service.js"
-import { StatExport, StatExportService } from "./service/stat-export-service.js"
+import { StatExportService } from "./service/stat-export-service.js"
+
+import {     
+    Pitch,
+    PlateAppearance,
+    PlayerAppearance, 
+    RunnerMovement,
+    Schedule,
+    StatExport
+} from "./repository/interfaces.js"
+
 import type BetterSqlite3 from "better-sqlite3"
 
 const databasePath =
@@ -148,10 +158,15 @@ async function run(): Promise<void> {
 }
 
 function isMainModule(): boolean {
-    return (
-        !!process.argv[1] &&
-        path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-    )
+    if (!process.argv[1]) {
+        return false
+    }
+
+    try {
+        return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))
+    } catch {
+        return false
+    }
 }
 
 if (isMainModule()) {
@@ -172,6 +187,9 @@ export {
     database
 }
 
+
+
+
 export type {
     StatExport,
     FieldingCredit,
@@ -179,6 +197,6 @@ export type {
     PlateAppearance,
     PlayerAppearance, 
     RunnerMovement,
+    Schedule,
     DefensiveEvent,
-    Schedule
 }

@@ -1,5 +1,5 @@
 import type { Database } from "better-sqlite3";
-import type { GameFeedResponse } from "mlb-stats-api";
+import { Game, GameDate } from "./interfaces.js";
 declare class GameRepository {
     private readonly database;
     constructor(database: Database);
@@ -14,19 +14,5 @@ declare class GameRepository {
     getGameDatesByDateRange(startDate: string, endDate: string): GameDate[];
     private mapRow;
 }
-interface Game {
-    gamePk: number;
-    data: GameFeedResponse;
-    gameDate?: string | null;
-    abstractGameState?: string | null;
-    codedGameState?: string | null;
-    detailedState?: string | null;
-    statusCode?: string | null;
-}
-interface GameDate {
-    gamePk: number;
-    gameDate: string;
-}
 export { GameRepository };
-export type { Game, GameDate };
 //# sourceMappingURL=game-repository.d.ts.map

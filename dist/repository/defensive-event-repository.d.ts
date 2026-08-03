@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3";
+import { DefensiveEvent } from "./interfaces.js";
 declare class DefensiveEventRepository {
     private readonly database;
     constructor(database: Database);
@@ -7,16 +8,6 @@ declare class DefensiveEventRepository {
     getByDateRange(startDate: string, endDate: string): DefensiveEvent[];
     put(defensiveEvent: DefensiveEvent): void;
     deleteByGame(gamePk: number): void;
-}
-interface DefensiveEvent {
-    gamePk: number;
-    atBatIndex: number;
-    eventIndex: number;
-    teamId: number;
-    playerId: number;
-    eventType: "starting_assignment" | "defensive_substitution" | "position_switch" | "pitching_change" | "removal";
-    fromPosition: "P" | "C" | "1B" | "2B" | "3B" | "SS" | "LF" | "CF" | "RF" | "DH" | null;
-    toPosition: "P" | "C" | "1B" | "2B" | "3B" | "SS" | "LF" | "CF" | "RF" | "DH" | null;
 }
 export { DefensiveEventRepository };
 export type { DefensiveEvent };

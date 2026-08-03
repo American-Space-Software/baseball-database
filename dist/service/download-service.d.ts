@@ -1,8 +1,7 @@
 import type { GameFeedResponse, ScheduleResponse } from "mlb-stats-api";
-import type { Game } from "../repository/game-repository.js";
 import { ScheduleRepository } from "../repository/schedule-repository.js";
-import type { Schedule } from "../repository/schedule-repository.js";
 import { GameService } from "./game-service.js";
+import { Game, Schedule } from "../repository/interfaces.js";
 declare class DownloadService {
     private readonly gameService;
     private readonly scheduleRepository;

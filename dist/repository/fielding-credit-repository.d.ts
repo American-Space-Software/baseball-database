@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3";
+import { FieldingCredit } from "./interfaces.js";
 declare class FieldingCreditRepository {
     private readonly database;
     constructor(database: Database);
@@ -11,18 +12,6 @@ declare class FieldingCreditRepository {
     put(fieldingCredit: FieldingCredit): void;
     deleteByGame(gamePk: number): void;
     private mapRow;
-}
-interface FieldingCredit {
-    gamePk: number;
-    atBatIndex: number;
-    runnerIndex: number;
-    creditIndex: number;
-    playerId: number;
-    credit: string;
-    positionCode: string | null;
-    positionName: string | null;
-    positionType: string | null;
-    positionAbbreviation: string | null;
 }
 export { FieldingCreditRepository };
 export type { FieldingCredit };

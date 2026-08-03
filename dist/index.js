@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 import MLBStatsAPI from "mlb-stats-api";
 import { DefensiveEventRepository } from "./repository/defensive-event-repository.js";
 import { FieldingCreditRepository } from "./repository/fielding-credit-repository.js";
@@ -81,8 +82,15 @@ async function run() {
     throw new Error("Expected one season or a start and end season.");
 }
 function isMainModule() {
-    return (!!process.argv[1] &&
-        path.resolve(process.argv[1]) === fileURLToPath(import.meta.url));
+    if (!process.argv[1]) {
+        return false;
+    }
+    try {
+        return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+    }
+    catch {
+        return false;
+    }
 }
 if (isMainModule()) {
     run()

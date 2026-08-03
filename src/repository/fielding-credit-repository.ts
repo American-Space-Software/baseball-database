@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3"
+import { FieldingCredit, FieldingCreditRow } from "./interfaces.js"
 
 class FieldingCreditRepository {
 
@@ -204,31 +205,6 @@ class FieldingCreditRepository {
     }
 }
 
-interface FieldingCredit {
-    gamePk: number
-    atBatIndex: number
-    runnerIndex: number
-    creditIndex: number
-    playerId: number
-    credit: string
-    positionCode: string | null
-    positionName: string | null
-    positionType: string | null
-    positionAbbreviation: string | null
-}
-
-interface FieldingCreditRow {
-    gamePk: number
-    atBatIndex: number
-    runnerIndex: number
-    creditIndex: number
-    playerId: number
-    credit: string
-    positionCode: string | null
-    positionName: string | null
-    positionType: string | null
-    positionAbbreviation: string | null
-}
 
 export {
     FieldingCreditRepository

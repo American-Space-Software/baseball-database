@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3"
+import { RunnerMovement } from "./interfaces.js"
 
 class RunnerMovementRepository {
 
@@ -419,36 +420,8 @@ class RunnerMovementRepository {
     }
 }
 
-interface RunnerMovement {
-    gamePk: number
-    atBatIndex: number
-    runnerIndex: number
-    playIndex: number | null
-
-    runnerId: number
-    responsiblePitcherId: number | null
-
-    event: string | null
-    eventType: string | null
-    movementReason: string | null
-
-    originBase: string | null
-    startBase: string | null
-    endBase: string | null
-    outBase: string | null
-
-    isOut: boolean
-    outNumber: number | null
-    isScoringEvent: boolean
-    rbi: number
-    earned: boolean
-    teamUnearned: boolean
-}
 
 export {
     RunnerMovementRepository
 }
 
-export type {
-    RunnerMovement
-}

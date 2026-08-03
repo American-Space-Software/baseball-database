@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3";
+import { Pitch } from "./interfaces.js";
 declare class PitchRepository {
     private readonly database;
     constructor(database: Database);
@@ -10,71 +11,5 @@ declare class PitchRepository {
     deleteByGame(gamePk: number): void;
     private mapRow;
 }
-interface Pitch {
-    gamePk: number;
-    atBatIndex: number;
-    eventIndex: number;
-    plateAppearanceId: string;
-    batterId: number;
-    pitcherId: number;
-    playId: string | null;
-    pitchNumber: number | null;
-    startTime: string | null;
-    endTime: string | null;
-    description: string | null;
-    code: string | null;
-    pitchTypeCode: string | null;
-    pitchTypeDescription: string | null;
-    callCode: string | null;
-    callDescription: string | null;
-    isInPlay: boolean;
-    isStrike: boolean;
-    isBall: boolean;
-    isScoringPlay: boolean;
-    hasReview: boolean;
-    balls: number | null;
-    strikes: number | null;
-    outs: number | null;
-    startSpeed: number | null;
-    endSpeed: number | null;
-    strikeZoneTop: number | null;
-    strikeZoneBottom: number | null;
-    zone: number | null;
-    typeConfidence: number | null;
-    plateTime: number | null;
-    extension: number | null;
-    coordinateAX: number | null;
-    coordinateAY: number | null;
-    coordinateAZ: number | null;
-    coordinatePfxX: number | null;
-    coordinatePfxZ: number | null;
-    coordinatePX: number | null;
-    coordinatePZ: number | null;
-    coordinateVX0: number | null;
-    coordinateVY0: number | null;
-    coordinateVZ0: number | null;
-    coordinateX: number | null;
-    coordinateX0: number | null;
-    coordinateY: number | null;
-    coordinateY0: number | null;
-    coordinateZ0: number | null;
-    breakAngle: number | null;
-    breakLength: number | null;
-    breakY: number | null;
-    breakVertical: number | null;
-    breakVerticalInduced: number | null;
-    breakHorizontal: number | null;
-    spinRate: number | null;
-    spinDirection: number | null;
-    launchSpeed: number | null;
-    launchAngle: number | null;
-    totalDistance: number | null;
-    trajectory: string | null;
-    hardness: string | null;
-    hitLocation: number | null;
-    hitCoordinateX: number | null;
-    hitCoordinateY: number | null;
-}
 export { PitchRepository };
-export type { Pitch };
 //# sourceMappingURL=pitch-repository.d.ts.map

@@ -4,9 +4,9 @@ import { PitchRepository } from "../repository/pitch-repository.js";
 import { PlateAppearanceRepository } from "../repository/plate-appearance-repository.js";
 import { PlayerAppearanceRepository } from "../repository/player-appearance-repository.js";
 import { RunnerMovementRepository } from "../repository/runner-movement-repository.js";
-import type { Game } from "../repository/game-repository.js";
 import { DefensiveEventRepository } from "../repository/defensive-event-repository.js";
 import { SchemaService } from "./schema-service.js";
+import { Game } from "../repository/interfaces.js";
 declare class GameService {
     private readonly schemaService;
     private readonly gameRepository;

@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3";
+import { PlayerAppearance } from "./interfaces.js";
 declare class PlayerAppearanceRepository {
     private readonly database;
     constructor(database: Database);
@@ -10,18 +11,5 @@ declare class PlayerAppearanceRepository {
     deleteByGame(gamePk: number): void;
     private mapRow;
 }
-interface PlayerAppearance {
-    gamePk: number;
-    playerId: number;
-    teamId: number;
-    appearedAsBatter: boolean;
-    appearedAsPitcher: boolean;
-    appearedAsRunner: boolean;
-    appearedAsFielder: boolean;
-    startedAsBatter: boolean;
-    startedAsPitcher: boolean;
-    startedAsFielder: boolean;
-}
 export { PlayerAppearanceRepository };
-export type { PlayerAppearance };
 //# sourceMappingURL=player-appearance-repository.d.ts.map

@@ -5,9 +5,9 @@ import { PlateAppearanceRepository } from "../repository/plate-appearance-reposi
 import { PlayerAppearanceRepository } from "../repository/player-appearance-repository.js"
 import { RunnerMovementRepository } from "../repository/runner-movement-repository.js"
 
-import type { Game } from "../repository/game-repository.js"
 import { DefensiveEvent, DefensiveEventRepository } from "../repository/defensive-event-repository.js"
 import { SchemaService } from "./schema-service.js"
+import { Game } from "../repository/interfaces.js"
 
 class GameService {
 

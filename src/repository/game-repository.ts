@@ -1,5 +1,6 @@
 import type { Database } from "better-sqlite3"
 import type { GameFeedResponse } from "mlb-stats-api"
+import { Game, GameDate, GameRow } from "./interfaces.js"
 
 class GameRepository {
 
@@ -207,36 +208,8 @@ class GameRepository {
     }
 }
 
-interface Game {
-    gamePk: number
-    data: GameFeedResponse
-    gameDate?: string | null
-    abstractGameState?: string | null
-    codedGameState?: string | null
-    detailedState?: string | null
-    statusCode?: string | null
-}
-
-interface GameRow {
-    gamePk: number
-    data: string
-    gameDate: string | null
-    abstractGameState: string | null
-    codedGameState: string | null
-    detailedState: string | null
-    statusCode: string | null
-}
-
-
-interface GameDate {
-    gamePk: number
-    gameDate: string
-}
 
 export {
     GameRepository
 }
 
-export type {
-    Game, GameDate
-}

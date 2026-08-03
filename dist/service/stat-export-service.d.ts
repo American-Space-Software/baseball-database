@@ -1,25 +1,11 @@
-import type { DefensiveEvent } from "../repository/defensive-event-repository.js";
 import { DefensiveEventRepository } from "../repository/defensive-event-repository.js";
-import type { FieldingCredit } from "../repository/fielding-credit-repository.js";
 import { FieldingCreditRepository } from "../repository/fielding-credit-repository.js";
-import { GameDate, GameRepository } from "../repository/game-repository.js";
-import type { Pitch } from "../repository/pitch-repository.js";
+import { GameRepository } from "../repository/game-repository.js";
+import { StatExport } from "../repository/interfaces.js";
 import { PitchRepository } from "../repository/pitch-repository.js";
-import type { PlateAppearance } from "../repository/plate-appearance-repository.js";
 import { PlateAppearanceRepository } from "../repository/plate-appearance-repository.js";
-import type { PlayerAppearance } from "../repository/player-appearance-repository.js";
 import { PlayerAppearanceRepository } from "../repository/player-appearance-repository.js";
-import type { RunnerMovement } from "../repository/runner-movement-repository.js";
 import { RunnerMovementRepository } from "../repository/runner-movement-repository.js";
-interface StatExport {
-    games: GameDate[];
-    appearances: PlayerAppearance[];
-    plateAppearances: PlateAppearance[];
-    pitches: Pitch[];
-    runnerMovements: RunnerMovement[];
-    fieldingCredits: FieldingCredit[];
-    defensiveEvents: DefensiveEvent[];
-}
 declare class StatExportService {
     private readonly gameRepository;
     private readonly playerAppearanceRepository;

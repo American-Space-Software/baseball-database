@@ -4,12 +4,9 @@ import { describe, it } from "mocha"
 
 import type { DefensiveEvent } from "../src/repository/defensive-event-repository.js"
 import type { FieldingCredit } from "../src/repository/fielding-credit-repository.js"
-import type { Pitch } from "../src/repository/pitch-repository.js"
-import type { PlateAppearance } from "../src/repository/plate-appearance-repository.js"
-import type { PlayerAppearance } from "../src/repository/player-appearance-repository.js"
-import type { RunnerMovement } from "../src/repository/runner-movement-repository.js"
+
 import { StatExportService } from "../src/service/stat-export-service.js"
-import { GameRepository } from "../src/repository/game-repository.js"
+import { Pitch, PlateAppearance, PlayerAppearance, RunnerMovement } from "../src/repository/interfaces.js"
 
 interface StatExportGame {
     gamePk: number

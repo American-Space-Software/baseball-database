@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3"
+import { PlateAppearance } from "./interfaces.js"
 
 class PlateAppearanceRepository {
 
@@ -428,35 +429,8 @@ class PlateAppearanceRepository {
     }
 }
 
-interface PlateAppearance {
-    gamePk: number
-    atBatIndex: number
-    inning: number
-    halfInning: string
-    isTopInning: boolean
-    batterId: number
-    pitcherId: number
-    batSideCode: string | null
-    pitchHandCode: string | null
-    resultType: string | null
-    event: string | null
-    eventType: string | null
-    description: string | null
-    rbi: number
-    awayScore: number
-    homeScore: number
-    balls: number
-    strikes: number
-    outs: number
-    startTime: string | null
-    endTime: string | null
-    isComplete: boolean
-}
 
 export {
     PlateAppearanceRepository
 }
 
-export type {
-    PlateAppearance
-}
