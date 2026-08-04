@@ -416,6 +416,35 @@ const createQuery = `
 
     CREATE INDEX idx_defensive_events_team
         ON defensive_events(team_id);
+
+
+
+    CREATE INDEX idx_player_appearances_player_game
+        ON player_appearances(player_id, game_pk);
+
+    CREATE INDEX idx_plate_appearances_batter_game
+        ON plate_appearances(batter_id, game_pk);
+
+    CREATE INDEX idx_plate_appearances_pitcher_game
+        ON plate_appearances(pitcher_id, game_pk);
+
+    CREATE INDEX idx_pitches_game_at_bat
+        ON pitches(game_pk, at_bat_index);
+
+    CREATE INDEX idx_runner_movements_runner_game
+        ON runner_movements(runner_id, game_pk);
+
+    CREATE INDEX idx_runner_movements_responsible_pitcher_game
+        ON runner_movements(responsible_pitcher_id, game_pk);
+
+    CREATE INDEX idx_fielding_credits_player_game
+        ON fielding_credits(player_id, game_pk);
+
+    CREATE INDEX idx_defensive_events_player_game
+        ON defensive_events(player_id, game_pk);
+
+
+
 `
 
 export {
