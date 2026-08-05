@@ -7,6 +7,7 @@ import {
     database,
     downloadSeason,
     downloadSeasons,
+    hooks,
     queries
 } from "baseball-database"
 
@@ -17,6 +18,7 @@ import type {
     Game,
     GameDate,
     GameRow,
+    GameSyncHook,
     Pitch,
     PlateAppearance,
     PlayerAppearance,
@@ -71,6 +73,80 @@ await downloadSeason(2023)
 await downloadSeason(2024)
 await downloadSeason(2025)
 ```
+
+---
+
+# Game Sync Hooks
+
+Applications can register hooks that execute after every game is synchronized.
+
+Hooks run after the normalized tables have been rebuilt and inside the same database transaction. If a hook throws an error, the complete game synchronization is rolled back.
+
+This allows applications to maintain their own derived tables, materialized data, caches, or application-specific analytics whenever a game is synchronized.
+
+## Register a hook
+
+```ts
+import {
+    database,
+    downloadSeason,
+    hooks
+} from "baseball-database"
+
+import type {
+    Game,
+    GameSyncHook
+} from "baseball-database"
+
+database.exec(`
+    CREATE TABLE IF NOT EXISTS synchronized_games (
+        game_pk INTEGER PRIMARY KEY,
+        synchronized_at TEXT NOT NULL
+    )
+`)
+
+const synchronizedGameHook: GameSyncHook = {
+    run(game: Game): void {
+        database
+            .prepare(`
+                INSERT INTO synchronized_games (
+                    game_pk,
+                    synchronized_at
+                ) VALUES (
+                    @gamePk,
+                    @synchronizedAt
+                )
+                ON CONFLICT(game_pk) DO UPDATE SET
+                    synchronized_at = excluded.synchronized_at
+            `)
+            .run({
+                gamePk: game.gamePk,
+                synchronizedAt: new Date().toISOString()
+            })
+    }
+}
+
+hooks.setGameSyncHooks([
+    synchronizedGameHook
+])
+
+await downloadSeason(2025)
+```
+
+The hook receives the complete `Game` object and can execute SQL directly through the exported `database` connection.
+
+The example creates an application-owned table and writes one row whenever a game is synchronized. Applications can use the same pattern to maintain materialized statistics, simulation inputs, machine-learning features, or other derived data.
+
+Multiple hooks may be registered:
+
+```ts
+hooks.setGameSyncHooks([
+    firstHook,
+    secondHook
+])
+```
+
+Hooks execute in the order they are provided.
 
 ---
 
@@ -173,6 +249,24 @@ Because SQL queries can return arbitrary shapes, aggregate queries are typically
 ---
 
 # TypeScript Interfaces
+
+## `GameSyncHook`
+
+Represents application code that runs after a game has been synchronized.
+
+```ts
+interface GameSyncHook {
+    run(game: Game): void
+}
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `run` | `(game: Game) => void` | Executes after the game and all normalized rows have been stored. |
+
+Hooks execute inside the same database transaction as the game synchronization.
+
+---
 
 ## `Game`
 

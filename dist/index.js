@@ -53,10 +53,14 @@ async function downloadSeasons(startSeason, endSeason, force = false) {
     }
     return results;
 }
+function setGameSyncHooks(hooks) { }
 const queries = {
     getGame,
     getSchedule,
     getStatExport
+};
+const hooks = {
+    setGameSyncHooks
 };
 async function run() {
     const force = process.argv.includes("--force");
@@ -102,5 +106,5 @@ if (isMainModule()) {
         schemaService.close();
     });
 }
-export { downloadSeason, downloadSeasons, queries, database };
+export { downloadSeason, downloadSeasons, queries, database, hooks };
 //# sourceMappingURL=index.js.map

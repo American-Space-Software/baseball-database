@@ -1,6 +1,6 @@
 {
   "name": "baseball-database",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Download MLB game data and store it in a local SQLite database.",
   "type": "module",
   "main": "./dist/index.js",

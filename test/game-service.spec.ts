@@ -1082,3 +1082,193 @@ describe("GameService", function () {
         )
     })
 })
+
+describe("GameSyncHook", function () {
+
+    let harness: GameServiceTestHarness
+    let game: Game
+
+    beforeEach(function () {
+        harness = new GameServiceTestHarness()
+        game = harness.buildGame()
+    })
+
+    it("invokes every registered hook after synchronizing the game", function () {
+        const synchronizedGames: Game[] = []
+
+        harness.service.gameSyncHooks = [
+            {
+                run(synchronizedGame) {
+                    synchronizedGames.push(synchronizedGame)
+                }
+            },
+            {
+                run(synchronizedGame) {
+                    synchronizedGames.push(synchronizedGame)
+                }
+            }
+        ]
+
+        harness.service.syncGame(game)
+
+        assert.deepEqual(
+            synchronizedGames,
+            [
+                game,
+                game
+            ]
+        )
+    })
+
+    it("does nothing when no hooks are registered", function () {
+        assert.doesNotThrow(() =>
+            harness.service.syncGame(game)
+        )
+    })
+
+    it("runs hooks every time the game is synchronized", function () {
+        let runs = 0
+
+        harness.service.gameSyncHooks = [
+            {
+                run() {
+                    runs++
+                }
+            }
+        ]
+
+        harness.service.syncGame(game)
+        harness.service.syncGame(game)
+
+        assert.equal(
+            runs,
+            2
+        )
+    })
+
+    it("runs hooks after the normalized repositories have been synchronized", function () {
+        harness.service.gameSyncHooks = [
+            {
+                run(synchronizedGame) {
+                    assert.equal(
+                        synchronizedGame,
+                        game
+                    )
+
+                    assert.deepEqual(
+                        harness.gameRepository.puts,
+                        [
+                            game
+                        ]
+                    )
+
+                    assert.deepEqual(
+                        harness.playerAppearanceRepository.deletedGamePks,
+                        [
+                            game.gamePk
+                        ]
+                    )
+
+                    assert.deepEqual(
+                        harness.plateAppearanceRepository.deletedGamePks,
+                        [
+                            game.gamePk
+                        ]
+                    )
+
+                    assert.deepEqual(
+                        harness.pitchRepository.deletedGamePks,
+                        [
+                            game.gamePk
+                        ]
+                    )
+
+                    assert.deepEqual(
+                        harness.runnerMovementRepository.deletedGamePks,
+                        [
+                            game.gamePk
+                        ]
+                    )
+
+                    assert.deepEqual(
+                        harness.fieldingCreditRepository.deletedGamePks,
+                        [
+                            game.gamePk
+                        ]
+                    )
+
+                    assert.deepEqual(
+                        harness.defensiveEventRepository.deletedGamePks,
+                        [
+                            game.gamePk
+                        ]
+                    )
+
+                    assert.equal(
+                        harness.playerAppearanceRepository.puts.length,
+                        6
+                    )
+
+                    assert.equal(
+                        harness.plateAppearanceRepository.puts.length,
+                        1
+                    )
+
+                    assert.equal(
+                        harness.pitchRepository.puts.length,
+                        1
+                    )
+
+                    assert.equal(
+                        harness.runnerMovementRepository.puts.length,
+                        1
+                    )
+
+                    assert.equal(
+                        harness.fieldingCreditRepository.puts.length,
+                        2
+                    )
+
+                    assert.ok(
+                        harness.defensiveEventRepository.puts.length > 0
+                    )
+                }
+            }
+        ]
+
+        harness.service.syncGame(game)
+    })
+
+    it("runs hooks in registration order", function () {
+        const runs: number[] = []
+
+        harness.service.gameSyncHooks = [
+            {
+                run() {
+                    runs.push(1)
+                }
+            },
+            {
+                run() {
+                    runs.push(2)
+                }
+            },
+            {
+                run() {
+                    runs.push(3)
+                }
+            }
+        ]
+
+        harness.service.syncGame(game)
+
+        assert.deepEqual(
+            runs,
+            [
+                1,
+                2,
+                3
+            ]
+        )
+    })
+})

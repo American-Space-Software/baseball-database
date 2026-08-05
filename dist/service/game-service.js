@@ -7,6 +7,7 @@ class GameService {
     runnerMovementRepository;
     fieldingCreditRepository;
     defensiveEventRepository;
+    _gameSyncHooks = [];
     constructor(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository) {
         this.schemaService = schemaService;
         this.gameRepository = gameRepository;
@@ -16,6 +17,9 @@ class GameService {
         this.runnerMovementRepository = runnerMovementRepository;
         this.fieldingCreditRepository = fieldingCreditRepository;
         this.defensiveEventRepository = defensiveEventRepository;
+    }
+    set gameSyncHooks(hooks) {
+        this._gameSyncHooks = hooks;
     }
     get(gamePk) {
         return this.gameRepository.get(gamePk);
@@ -38,6 +42,9 @@ class GameService {
             this.syncRunnerMovements(game);
             this.syncFieldingCredits(game);
             this.syncDefensiveEvents(game);
+            for (const gameSyncHook of this._gameSyncHooks) {
+                gameSyncHook.run(game);
+            }
         });
     }
     syncPlayerAppearances(game) {

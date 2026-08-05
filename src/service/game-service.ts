@@ -9,7 +9,15 @@ import { DefensiveEvent, DefensiveEventRepository } from "../repository/defensiv
 import { SchemaService } from "./schema-service.js"
 import { Game } from "../repository/interfaces.js"
 
+
+interface GameSyncHook {
+    run(game: Game): void
+}
+
+
 class GameService {
+
+    private _gameSyncHooks: GameSyncHook[] = []
 
     public constructor(
         private readonly schemaService:SchemaService,
@@ -19,8 +27,13 @@ class GameService {
         private readonly pitchRepository: PitchRepository,
         private readonly runnerMovementRepository: RunnerMovementRepository,
         private readonly fieldingCreditRepository: FieldingCreditRepository,
-        private readonly defensiveEventRepository: DefensiveEventRepository
+        private readonly defensiveEventRepository: DefensiveEventRepository,
+        
     ) {}
+
+    public set gameSyncHooks(hooks: GameSyncHook[]) {
+        this._gameSyncHooks = hooks
+    }
 
     public get(gamePk: number): Game | undefined {
         return this.gameRepository.get(gamePk)
@@ -50,6 +63,10 @@ class GameService {
             this.syncRunnerMovements(game)
             this.syncFieldingCredits(game)
             this.syncDefensiveEvents(game)
+
+            for (const gameSyncHook of this._gameSyncHooks) {
+                gameSyncHook.run(game)
+            }
         })
     }
 
@@ -668,5 +685,6 @@ class GameService {
 }
 
 export {
-    GameService
+    GameService,
+    GameSyncHook
 }

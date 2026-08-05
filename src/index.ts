@@ -15,7 +15,7 @@ import {  RunnerMovementRepository } from "./repository/runner-movement-reposito
 import {  ScheduleRepository } from "./repository/schedule-repository.js"
 
 import { DownloadService } from "./service/download-service.js"
-import { GameService } from "./service/game-service.js"
+import { GameService, GameSyncHook } from "./service/game-service.js"
 import { SchemaService } from "./service/schema-service.js"
 import { StatExportService } from "./service/stat-export-service.js"
 
@@ -109,10 +109,16 @@ async function downloadSeasons(startSeason: number, endSeason: number, force = f
     return results
 }
 
+function setGameSyncHooks(hooks: GameSyncHook[]): void { }
+
 const queries = {
     getGame,
     getSchedule,
     getStatExport
+}
+
+const hooks = {
+    setGameSyncHooks
 }
 
 async function run(): Promise<void> {
@@ -184,7 +190,8 @@ export {
     downloadSeason,
     downloadSeasons,
     queries,
-    database
+    database,
+    hooks
 }
 
 

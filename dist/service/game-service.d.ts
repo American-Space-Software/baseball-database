@@ -7,6 +7,9 @@ import { RunnerMovementRepository } from "../repository/runner-movement-reposito
 import { DefensiveEventRepository } from "../repository/defensive-event-repository.js";
 import { SchemaService } from "./schema-service.js";
 import { Game } from "../repository/interfaces.js";
+interface GameSyncHook {
+    run(game: Game): void;
+}
 declare class GameService {
     private readonly schemaService;
     private readonly gameRepository;
@@ -16,7 +19,9 @@ declare class GameService {
     private readonly runnerMovementRepository;
     private readonly fieldingCreditRepository;
     private readonly defensiveEventRepository;
+    private _gameSyncHooks;
     constructor(schemaService: SchemaService, gameRepository: GameRepository, playerAppearanceRepository: PlayerAppearanceRepository, plateAppearanceRepository: PlateAppearanceRepository, pitchRepository: PitchRepository, runnerMovementRepository: RunnerMovementRepository, fieldingCreditRepository: FieldingCreditRepository, defensiveEventRepository: DefensiveEventRepository);
+    set gameSyncHooks(hooks: GameSyncHook[]);
     get(gamePk: number): Game | undefined;
     getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
     syncGame(game: Game): void;
@@ -43,5 +48,5 @@ declare class GameService {
     private isDefensiveSwitch;
     private normalizeDefensivePosition;
 }
-export { GameService };
+export { GameService, GameSyncHook };
 //# sourceMappingURL=game-service.d.ts.map
