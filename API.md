@@ -184,6 +184,27 @@ Returns `undefined` if the season has not been downloaded.
 
 ---
 
+## `queries.getCompletedGamePksByDateRange()`
+
+Returns the MLB game identifiers for every completed game stored inside the requested date range.
+
+The start date is inclusive and the end date is exclusive.
+
+```ts
+import { queries } from "baseball-database"
+
+const gamePks: number[] = queries.getCompletedGamePksByDateRange(
+    "2025-04-01",
+    "2025-05-01"
+)
+```
+
+Only games in a final state are returned. Postponed, cancelled, suspended, and delayed-review games are excluded.
+
+Results are ordered by game date and then by game identifier.
+
+---
+
 ## `queries.getStatExport()`
 
 Returns a normalized relational export covering every game in the requested date range.
@@ -192,6 +213,11 @@ Returns a normalized relational export covering every game in the requested date
 import { queries } from "baseball-database"
 
 import type { StatExport } from "baseball-database"
+
+const completedGamePks: number[] = queries.getCompletedGamePksByDateRange(
+    "2025-04-01",
+    "2025-05-01"
+)
 
 const exportData: StatExport = queries.getStatExport(
     "2025-04-01",
@@ -873,8 +899,9 @@ const pitches: Pitch[] = database
     .all(777858) as Pitch[]
 
 console.log(game?.gamePk)
+console.log(completedGamePks.length)
 console.log(exportData.plateAppearances.length)
 console.log(pitches.length)
 ```
 
-This example downloads a season, retrieves a complete game feed, exports normalized relational data for a date range, and executes a custom SQL query against the underlying SQLite database.
+This example downloads a season, retrieves a complete game feed, retrieves completed game identifiers for a date range, exports normalized relational data, and executes a custom SQL query against the underlying SQLite database.

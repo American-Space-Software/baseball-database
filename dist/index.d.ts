@@ -8,6 +8,7 @@ declare const database: BetterSqlite3.Database;
 declare function getGame(gamePk: number): import("./repository/interfaces.js").Game | undefined;
 declare function getSchedule(season: number): Schedule | undefined;
 declare function getStatExport(startDate: string, endDate: string): StatExport;
+declare function getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
 declare function downloadSeason(season: number, force?: boolean): Promise<Set<number>>;
 declare function downloadSeasons(startSeason: number, endSeason: number, force?: boolean): Promise<Map<number, Set<number>>>;
 declare function setGameSyncHooks(hooks: GameSyncHook[]): void;
@@ -15,6 +16,7 @@ declare const queries: {
     getGame: typeof getGame;
     getSchedule: typeof getSchedule;
     getStatExport: typeof getStatExport;
+    getCompletedGamePksByDateRange: typeof getCompletedGamePksByDateRange;
 };
 declare const hooks: {
     setGameSyncHooks: typeof setGameSyncHooks;

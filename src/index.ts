@@ -90,6 +90,14 @@ function getStatExport(startDate: string, endDate: string) {
     return statExportService.getByDateRange(startDate, endDate)
 }
 
+function getCompletedGamePksByDateRange(startDate: string, endDate: string): number[] {
+    return gameRepository.getCompletedGamePksByDateRange(
+        startDate,
+        endDate
+    )
+}
+
+
 async function downloadSeason(season: number, force = false): Promise<Set<number>> {
     return downloadService.syncSeason(season, force)
 }
@@ -114,7 +122,8 @@ function setGameSyncHooks(hooks: GameSyncHook[]): void { }
 const queries = {
     getGame,
     getSchedule,
-    getStatExport
+    getStatExport,
+    getCompletedGamePksByDateRange
 }
 
 const hooks = {

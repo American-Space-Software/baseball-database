@@ -42,6 +42,9 @@ function getSchedule(season) {
 function getStatExport(startDate, endDate) {
     return statExportService.getByDateRange(startDate, endDate);
 }
+function getCompletedGamePksByDateRange(startDate, endDate) {
+    return gameRepository.getCompletedGamePksByDateRange(startDate, endDate);
+}
 async function downloadSeason(season, force = false) {
     return downloadService.syncSeason(season, force);
 }
@@ -57,7 +60,8 @@ function setGameSyncHooks(hooks) { }
 const queries = {
     getGame,
     getSchedule,
-    getStatExport
+    getStatExport,
+    getCompletedGamePksByDateRange
 };
 const hooks = {
     setGameSyncHooks
