@@ -109,6 +109,21 @@ const createQuery = `
             abstract_game_state
         );
 
+    CREATE INDEX idx_games_completed_game_date
+    ON games (
+        game_date,
+        game_pk
+    )
+    WHERE abstract_game_state = 'Final'
+        AND detailed_state NOT IN (
+            'Postponed',
+            'Cancelled',
+            'Suspended'
+        )
+        AND coded_game_state <> 'D'
+        AND status_code <> 'DR';
+
+
     CREATE TABLE schedules (
         season INTEGER PRIMARY KEY,
         data TEXT NOT NULL,

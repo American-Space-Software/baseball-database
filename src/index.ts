@@ -117,7 +117,9 @@ async function downloadSeasons(startSeason: number, endSeason: number, force = f
     return results
 }
 
-function setGameSyncHooks(hooks: GameSyncHook[]): void { }
+function setGameSyncHooks(hooks: GameSyncHook[]): void {
+    gameService.gameSyncHooks = hooks
+}
 
 const queries = {
     getGame,

@@ -56,7 +56,9 @@ async function downloadSeasons(startSeason, endSeason, force = false) {
     }
     return results;
 }
-function setGameSyncHooks(hooks) { }
+function setGameSyncHooks(hooks) {
+    gameService.gameSyncHooks = hooks;
+}
 const queries = {
     getGame,
     getSchedule,
