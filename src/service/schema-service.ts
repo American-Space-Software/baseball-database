@@ -56,7 +56,6 @@ class SchemaService {
         return this.database.transaction(callback)()
     }
 
-
     public close(): void {
         if (!this.database) {
             return
@@ -128,6 +127,28 @@ const createQuery = `
         season INTEGER PRIMARY KEY,
         data TEXT NOT NULL,
         downloaded_at TEXT NOT NULL
+    );
+
+    CREATE TABLE players (
+        player_id INTEGER PRIMARY KEY,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+
+        primary_position TEXT,
+        bats TEXT,
+        throws TEXT,
+
+        birth_date TEXT,
+        birth_city TEXT,
+        birth_country TEXT,
+
+        height TEXT,
+        weight INTEGER,
+
+        mlb_debut_date TEXT,
+        primary_number TEXT,
+        nick_name TEXT
     );
 
     CREATE TABLE player_appearances (

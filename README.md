@@ -29,7 +29,8 @@ It can be used as either:
 - 🔄 Incrementally synchronize only games that have changed
 - ⏱️ Automatically refresh games that are still in progress
 - 💾 Preserve every official schedule and game feed exactly as returned by MLB
-- 🗄️ Automatically extract game data into a normalized relational schema
+- 🗄️ Automatically extract game and player data into a normalized relational schema
+- 👤 Maintain normalized player identity, position, handedness, and birth date data
 - ⚡ Fast indexed SQLite queries for analytics workloads
 - 📦 Simple TypeScript API
 - 📝 Full TypeScript type definitions included
@@ -100,7 +101,7 @@ const result = database
 
 The original MLB game feeds are preserved exactly as returned by the API.
 
-To make analytics dramatically faster, commonly queried information is automatically extracted into relational tables while preserving the original JSON as the canonical source of truth.
+To make analytics dramatically faster, commonly queried game, player, appearance, pitch, baserunning, and defensive information is automatically extracted into relational tables while preserving the original JSON as the canonical source of truth.
 
 Applications can choose between:
 
@@ -271,7 +272,7 @@ npm run download -- 2025 --force
 
 Every official schedule and game feed is stored exactly as returned by MLB.
 
-The normalized tables are derived from those game feeds to make querying faster, but the original JSON is always preserved and remains the canonical source of truth.
+The normalized tables, including player metadata and game-level analytical tables, are derived from those game feeds to make querying faster, but the original JSON is always preserved and remains the canonical source of truth.
 
 ---
 
@@ -291,12 +292,15 @@ The database exposes both the original game feeds and a normalized relational sc
 |--------|-------------|
 | `games` | Original MLB game feeds with indexed metadata |
 | `schedules` | Official schedules by season |
+| `players` | Player identity, primary position, handedness, and birth date |
 | `player_appearances` | Every player appearance in every game |
 | `plate_appearances` | Every plate appearance |
 | `pitches` | Every pitch including Statcast measurements |
 | `runner_movements` | Every baserunner advancement or out |
 | `fielding_credits` | Defensive credits recorded during plays |
 | `defensive_events` | Defensive substitutions and position changes |
+
+Player records are populated from the `gameData.players` collection in synchronized MLB game feeds and updated as newer game data is processed.
 
 These tables make common baseball analytics straightforward without repeatedly traversing deeply nested JSON documents.
 

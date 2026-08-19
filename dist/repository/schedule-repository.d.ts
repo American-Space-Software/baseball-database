@@ -7,4 +7,5 @@ declare class ScheduleRepository {
     put(schedule: Schedule): void;
 }
 export { ScheduleRepository };
+export type { Schedule };
 //# sourceMappingURL=schedule-repository.d.ts.map

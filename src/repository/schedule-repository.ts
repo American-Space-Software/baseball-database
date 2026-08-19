@@ -58,3 +58,7 @@ class ScheduleRepository {
 export {
     ScheduleRepository
 }
+
+export type {
+    Schedule
+}

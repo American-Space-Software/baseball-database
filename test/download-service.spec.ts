@@ -19,6 +19,7 @@ import { DownloadService } from "../src/service/download-service.js"
 import type { MLBStatsAPIClient } from "../src/service/download-service.js"
 import { GameService } from "../src/service/game-service.js"
 import { SchemaService } from "../src/service/schema-service.js"
+import { PlayerRepository } from "../src/repository/player-repository.js"
 
 class MLBStatsAPIClientTestHarness implements MLBStatsAPIClient {
 
@@ -87,6 +88,7 @@ describe("DownloadService", function () {
         const runnerMovementRepository = new RunnerMovementRepository(database)
         const fieldingCreditRepository = new FieldingCreditRepository(database)
         const defensiveEventRepository = new DefensiveEventRepository(database)
+        const playerRepository = new PlayerRepository(database)
 
         gameService = new GameService(
             schemaService,
@@ -96,7 +98,8 @@ describe("DownloadService", function () {
             pitchRepository,
             runnerMovementRepository,
             fieldingCreditRepository,
-            defensiveEventRepository
+            defensiveEventRepository,
+            playerRepository
         )
 
         api = new MLBStatsAPIClientTestHarness()
@@ -792,7 +795,7 @@ describe("DownloadService", function () {
                     allPlays: []
                 }
             }
-        } as GameFeedResponse
+        } as unknown as GameFeedResponse
     }
 
     function createSchedule(season: number, downloadedAt: string, games: ScheduleGameInput[]): Schedule {

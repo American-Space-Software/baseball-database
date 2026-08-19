@@ -7,8 +7,9 @@ class GameService {
     runnerMovementRepository;
     fieldingCreditRepository;
     defensiveEventRepository;
+    playerRepository;
     _gameSyncHooks = [];
-    constructor(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository) {
+    constructor(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository, playerRepository) {
         this.schemaService = schemaService;
         this.gameRepository = gameRepository;
         this.playerAppearanceRepository = playerAppearanceRepository;
@@ -17,6 +18,7 @@ class GameService {
         this.runnerMovementRepository = runnerMovementRepository;
         this.fieldingCreditRepository = fieldingCreditRepository;
         this.defensiveEventRepository = defensiveEventRepository;
+        this.playerRepository = playerRepository;
     }
     set gameSyncHooks(hooks) {
         this._gameSyncHooks = hooks;
@@ -36,6 +38,7 @@ class GameService {
             this.runnerMovementRepository.deleteByGame(game.gamePk);
             this.fieldingCreditRepository.deleteByGame(game.gamePk);
             this.defensiveEventRepository.deleteByGame(game.gamePk);
+            this.syncPlayers(game);
             this.syncPlayerAppearances(game);
             this.syncPlateAppearances(game);
             this.syncPitches(game);
@@ -46,6 +49,34 @@ class GameService {
                 gameSyncHook.run(game);
             }
         });
+    }
+    syncPlayers(game) {
+        for (const gamePlayer of Object.values(game.data.gameData.players ?? {})) {
+            const player = gamePlayer;
+            const playerId = Number(player.id);
+            const firstName = player.firstName;
+            const lastName = player.lastName;
+            if (!Number.isFinite(playerId) || !firstName || !lastName) {
+                continue;
+            }
+            this.playerRepository.put({
+                playerId,
+                firstName,
+                lastName,
+                fullName: player.fullName ?? `${firstName} ${lastName}`,
+                primaryPosition: player.primaryPosition?.abbreviation ?? null,
+                bats: player.batSide?.code ?? null,
+                throws: player.pitchHand?.code ?? null,
+                birthDate: player.birthDate ?? null,
+                birthCity: player.birthCity ?? null,
+                birthCountry: player.birthCountry ?? null,
+                height: player.height ?? null,
+                weight: this.numberOrNull(player.weight),
+                mlbDebutDate: player.mlbDebutDate ?? null,
+                primaryNumber: player.primaryNumber ?? null,
+                nickName: player.nickName ?? null
+            });
+        }
     }
     syncPlayerAppearances(game) {
         const boxscore = game.data.liveData?.boxscore;

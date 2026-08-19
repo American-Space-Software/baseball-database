@@ -20,6 +20,7 @@ import { SchemaService } from "./service/schema-service.js"
 import { StatExportService } from "./service/stat-export-service.js"
 
 import {     
+    Game,
     Pitch,
     PlateAppearance,
     PlayerAppearance, 
@@ -29,6 +30,7 @@ import {
 } from "./repository/interfaces.js"
 
 import type BetterSqlite3 from "better-sqlite3"
+import { PlayerRepository } from "./repository/player-repository.js"
 
 const databasePath =
     process.env.BASEBALL_DATABASE_PATH ??
@@ -49,6 +51,7 @@ const runnerMovementRepository = new RunnerMovementRepository(database)
 const fieldingCreditRepository = new FieldingCreditRepository(database)
 const scheduleRepository = new ScheduleRepository(database)
 const defensiveEventRepository = new DefensiveEventRepository(database)
+const playerRepository = new PlayerRepository(database)
 
 const statExportService = new StatExportService(
     gameRepository,
@@ -68,7 +71,8 @@ const gameService = new GameService(
     pitchRepository,
     runnerMovementRepository,
     fieldingCreditRepository,
-    defensiveEventRepository
+    defensiveEventRepository,
+    playerRepository
 )
 
 const downloadService = new DownloadService(
@@ -97,6 +101,9 @@ function getCompletedGamePksByDateRange(startDate: string, endDate: string): num
     )
 }
 
+function syncGame(game: Game): void {
+    gameService.syncGame(game)
+}
 
 async function downloadSeason(season: number, force = false): Promise<Set<number>> {
     return downloadService.syncSeason(season, force)
@@ -116,6 +123,7 @@ async function downloadSeasons(startSeason: number, endSeason: number, force = f
 
     return results
 }
+
 
 function setGameSyncHooks(hooks: GameSyncHook[]): void {
     gameService.gameSyncHooks = hooks
@@ -200,6 +208,7 @@ if (isMainModule()) {
 export {
     downloadSeason,
     downloadSeasons,
+    syncGame,
     queries,
     database,
     hooks

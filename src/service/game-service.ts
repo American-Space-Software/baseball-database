@@ -8,6 +8,7 @@ import { RunnerMovementRepository } from "../repository/runner-movement-reposito
 import { DefensiveEvent, DefensiveEventRepository } from "../repository/defensive-event-repository.js"
 import { SchemaService } from "./schema-service.js"
 import { Game } from "../repository/interfaces.js"
+import { PlayerRepository } from "../repository/player-repository.js"
 
 
 interface GameSyncHook {
@@ -28,6 +29,7 @@ class GameService {
         private readonly runnerMovementRepository: RunnerMovementRepository,
         private readonly fieldingCreditRepository: FieldingCreditRepository,
         private readonly defensiveEventRepository: DefensiveEventRepository,
+        private readonly playerRepository:PlayerRepository
         
     ) {}
 
@@ -57,6 +59,7 @@ class GameService {
             this.fieldingCreditRepository.deleteByGame(game.gamePk)
             this.defensiveEventRepository.deleteByGame(game.gamePk)
 
+            this.syncPlayers(game)
             this.syncPlayerAppearances(game)
             this.syncPlateAppearances(game)
             this.syncPitches(game)
@@ -68,6 +71,37 @@ class GameService {
                 gameSyncHook.run(game)
             }
         })
+    }
+
+    private syncPlayers(game: Game): void {
+        for (const gamePlayer of Object.values(game.data.gameData.players ?? {})) {
+            const player = gamePlayer as any
+            const playerId = Number(player.id)
+            const firstName = player.firstName
+            const lastName = player.lastName
+
+            if (!Number.isFinite(playerId) || !firstName || !lastName) {
+                continue
+            }
+
+            this.playerRepository.put({
+                playerId,
+                firstName,
+                lastName,
+                fullName: player.fullName ?? `${firstName} ${lastName}`,
+                primaryPosition: player.primaryPosition?.abbreviation ?? null,
+                bats: player.batSide?.code ?? null,
+                throws: player.pitchHand?.code ?? null,
+                birthDate: player.birthDate ?? null,
+                birthCity: player.birthCity ?? null,
+                birthCountry: player.birthCountry ?? null,
+                height: player.height ?? null,
+                weight: this.numberOrNull(player.weight),
+                mlbDebutDate: player.mlbDebutDate ?? null,
+                primaryNumber: player.primaryNumber ?? null,
+                nickName: player.nickName ?? null
+            })
+        }
     }
 
     private syncPlayerAppearances(game: Game): void {

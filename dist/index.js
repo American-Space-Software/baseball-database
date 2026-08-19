@@ -15,6 +15,7 @@ import { DownloadService } from "./service/download-service.js";
 import { GameService } from "./service/game-service.js";
 import { SchemaService } from "./service/schema-service.js";
 import { StatExportService } from "./service/stat-export-service.js";
+import { PlayerRepository } from "./repository/player-repository.js";
 const databasePath = process.env.BASEBALL_DATABASE_PATH ??
     path.resolve(process.cwd(), "data/baseball.sqlite");
 const throttleMs = process.env.THROTTLE_MS
@@ -30,8 +31,9 @@ const runnerMovementRepository = new RunnerMovementRepository(database);
 const fieldingCreditRepository = new FieldingCreditRepository(database);
 const scheduleRepository = new ScheduleRepository(database);
 const defensiveEventRepository = new DefensiveEventRepository(database);
+const playerRepository = new PlayerRepository(database);
 const statExportService = new StatExportService(gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
-const gameService = new GameService(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
+const gameService = new GameService(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository, playerRepository);
 const downloadService = new DownloadService(gameService, scheduleRepository, new MLBStatsAPI(), throttleMs);
 function getGame(gamePk) {
     return gameService.get(gamePk);
@@ -44,6 +46,9 @@ function getStatExport(startDate, endDate) {
 }
 function getCompletedGamePksByDateRange(startDate, endDate) {
     return gameRepository.getCompletedGamePksByDateRange(startDate, endDate);
+}
+function syncGame(game) {
+    gameService.syncGame(game);
 }
 async function downloadSeason(season, force = false) {
     return downloadService.syncSeason(season, force);
@@ -112,5 +117,5 @@ if (isMainModule()) {
         schemaService.close();
     });
 }
-export { downloadSeason, downloadSeasons, queries, database, hooks };
+export { downloadSeason, downloadSeasons, syncGame, queries, database, hooks };
 //# sourceMappingURL=index.js.map

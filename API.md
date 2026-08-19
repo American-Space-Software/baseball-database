@@ -1,6 +1,6 @@
 # API
 
-The package exports download functions, query helpers, TypeScript interfaces, and direct access to the initialized SQLite database.
+The package exports download functions, game synchronization, query helpers, TypeScript interfaces, and direct access to the initialized SQLite database.
 
 ```ts
 import {
@@ -8,7 +8,8 @@ import {
     downloadSeason,
     downloadSeasons,
     hooks,
-    queries
+    queries,
+    syncGame
 } from "baseball-database"
 
 import type {
@@ -52,6 +53,8 @@ await downloadSeason(2025, true)
 
 Games that have reached a final state are downloaded once and reused automatically. Games that are missing or still in progress are refreshed until they become final.
 
+Each synchronized game stores the complete MLB game feed and rebuilds the normalized game, player, appearance, plate appearance, pitch, runner movement, fielding credit, and defensive event data derived from it.
+
 ---
 
 ## `downloadSeasons()`
@@ -76,11 +79,48 @@ await downloadSeason(2025)
 
 ---
 
+# Game Synchronization
+
+## `syncGame()`
+
+Synchronizes an already-downloaded game using the same normalization process used by the downloader.
+
+```ts
+import {
+    queries,
+    syncGame
+} from "baseball-database"
+
+const game = queries.getGame(777858)
+
+if (game) {
+    syncGame(game)
+}
+```
+
+`syncGame()` rebuilds the normalized data derived from the stored game feed, including:
+
+- players
+- player appearances
+- plate appearances
+- pitches
+- runner movements
+- fielding credits
+- defensive events
+
+Any hooks registered with `hooks.setGameSyncHooks()` are also executed.
+
+This makes it possible to rebuild normalized or application-owned derived data without downloading the game again.
+
+---
+
 # Game Sync Hooks
 
 Applications can register hooks that execute after every game is synchronized.
 
 Hooks run after the normalized tables have been rebuilt and inside the same database transaction. If a hook throws an error, the complete game synchronization is rolled back.
+
+Hooks run whether the game was synchronized through `downloadSeason()` or directly through `syncGame()`.
 
 This allows applications to maintain their own derived tables, materialized data, caches, or application-specific analytics whenever a game is synchronized.
 
@@ -214,11 +254,6 @@ import { queries } from "baseball-database"
 
 import type { StatExport } from "baseball-database"
 
-const completedGamePks: number[] = queries.getCompletedGamePksByDateRange(
-    "2025-04-01",
-    "2025-05-01"
-)
-
 const exportData: StatExport = queries.getStatExport(
     "2025-04-01",
     "2025-04-30"
@@ -232,6 +267,59 @@ The returned export contains every normalized record for the requested date rang
 # Database Access
 
 The initialized `better-sqlite3` database connection is exported directly.
+
+## Query players
+
+Player bio data is normalized into the `players` table whenever a game is synchronized.
+
+```ts
+import { database } from "baseball-database"
+
+interface Player {
+    playerId: number
+    firstName: string
+    lastName: string
+    fullName: string
+    primaryPosition: string | null
+    bats: string | null
+    throws: string | null
+    birthDate: string | null
+    birthCity: string | null
+    birthCountry: string | null
+    height: string | null
+    weight: number | null
+    mlbDebutDate: string | null
+    primaryNumber: string | null
+    nickName: string | null
+}
+
+const player = database
+    .prepare(`
+        SELECT
+            player_id AS playerId,
+            first_name AS firstName,
+            last_name AS lastName,
+            full_name AS fullName,
+            primary_position AS primaryPosition,
+            bats,
+            throws,
+            birth_date AS birthDate,
+            birth_city AS birthCity,
+            birth_country AS birthCountry,
+            height,
+            weight,
+            mlb_debut_date AS mlbDebutDate,
+            primary_number AS primaryNumber,
+            nick_name AS nickName
+        FROM players
+        WHERE player_id = ?
+    `)
+    .get(592450) as Player | undefined
+```
+
+The player record is updated as newer synchronized game feeds provide player metadata.
+
+---
 
 ## Query pitches
 
@@ -443,24 +531,20 @@ interface Pitch {
     pitchNumber: number | null
     startTime: string | null
     endTime: string | null
-
     description: string | null
     code: string | null
     pitchTypeCode: string | null
     pitchTypeDescription: string | null
     callCode: string | null
     callDescription: string | null
-
     isInPlay: boolean
     isStrike: boolean
     isBall: boolean
     isScoringPlay: boolean
     hasReview: boolean
-
     balls: number | null
     strikes: number | null
     outs: number | null
-
     startSpeed: number | null
     endSpeed: number | null
     strikeZoneTop: number | null
@@ -469,7 +553,6 @@ interface Pitch {
     typeConfidence: number | null
     plateTime: number | null
     extension: number | null
-
     coordinateAX: number | null
     coordinateAY: number | null
     coordinateAZ: number | null
@@ -485,7 +568,6 @@ interface Pitch {
     coordinateY: number | null
     coordinateY0: number | null
     coordinateZ0: number | null
-
     breakAngle: number | null
     breakLength: number | null
     breakY: number | null
@@ -494,7 +576,6 @@ interface Pitch {
     breakHorizontal: number | null
     spinRate: number | null
     spinDirection: number | null
-
     launchSpeed: number | null
     launchAngle: number | null
     totalDistance: number | null
@@ -520,19 +601,15 @@ interface RunnerMovement {
     atBatIndex: number
     runnerIndex: number
     playIndex: number | null
-
     runnerId: number
     responsiblePitcherId: number | null
-
     event: string | null
     eventType: string | null
     movementReason: string | null
-
     originBase: string | null
     startBase: string | null
     endBase: string | null
     outBase: string | null
-
     isOut: boolean
     outNumber: number | null
     isScoringEvent: boolean
@@ -672,7 +749,6 @@ interface StatExport {
 
 ---
 
-
 # Database Schema
 
 The SQLite database stores both the original MLB game feeds and a normalized relational schema for fast analytical queries.
@@ -696,6 +772,7 @@ Indexes:
 - `idx_games_game_date`
 - `idx_games_status`
 - `idx_games_date_completed`
+- `idx_games_completed_game_date`
 
 ---
 
@@ -708,6 +785,34 @@ Stores one official schedule for each downloaded season.
 | `season` | INTEGER |
 | `data` | TEXT |
 | `downloaded_at` | TEXT |
+
+---
+
+## `players`
+
+Stores one row for each MLB player encountered in a synchronized game feed.
+
+Player information is read from the `gameData.players` collection and stored when the game is synchronized.
+
+| Column | Type | Description |
+|---|---|---|
+| `player_id` | INTEGER | Primary key. MLB player identifier. |
+| `first_name` | TEXT | Player first name. |
+| `last_name` | TEXT | Player last name. |
+| `full_name` | TEXT | Player full name. |
+| `primary_position` | TEXT | Primary position abbreviation when available. |
+| `bats` | TEXT | Batting handedness when available. |
+| `throws` | TEXT | Throwing handedness when available. |
+| `birth_date` | TEXT | Player birth date when available. |
+| `birth_city` | TEXT | Birth city when available. |
+| `birth_country` | TEXT | Birth country when available. |
+| `height` | TEXT | Player height when available. |
+| `weight` | INTEGER | Player weight in pounds when available. |
+| `mlb_debut_date` | TEXT | MLB debut date when available. |
+| `primary_number` | TEXT | Primary uniform number when available. |
+| `nick_name` | TEXT | Player nickname when available. |
+
+The table contains one persistent row per player rather than one row per game appearance.
 
 ---
 
@@ -732,6 +837,7 @@ Indexes:
 
 - `idx_player_appearances_player`
 - `idx_player_appearances_team`
+- `idx_player_appearances_player_game`
 
 ---
 
@@ -768,6 +874,8 @@ Indexes:
 
 - `idx_plate_appearances_batter`
 - `idx_plate_appearances_pitcher`
+- `idx_plate_appearances_batter_game`
+- `idx_plate_appearances_pitcher_game`
 
 ---
 
@@ -786,6 +894,7 @@ Primary key:
 Indexes:
 
 - `idx_pitches_game`
+- `idx_pitches_game_at_bat`
 
 ---
 
@@ -818,6 +927,8 @@ One row for every baserunner movement.
 Indexes:
 
 - `idx_runner_movements_runner`
+- `idx_runner_movements_runner_game`
+- `idx_runner_movements_responsible_pitcher_game`
 
 ---
 
@@ -843,6 +954,7 @@ Stored fields:
 Indexes:
 
 - `idx_fielding_credits_player`
+- `idx_fielding_credits_player_game`
 
 ---
 
@@ -862,6 +974,7 @@ Indexes:
 
 - `idx_defensive_events_player`
 - `idx_defensive_events_team`
+- `idx_defensive_events_player_game`
 
 ---
 
@@ -871,7 +984,8 @@ Indexes:
 import {
     database,
     downloadSeason,
-    queries
+    queries,
+    syncGame
 } from "baseball-database"
 
 import type {
@@ -883,6 +997,11 @@ import type {
 await downloadSeason(2025)
 
 const game: Game | undefined = queries.getGame(777858)
+
+const completedGamePks: number[] = queries.getCompletedGamePksByDateRange(
+    "2025-04-01",
+    "2025-05-01"
+)
 
 const exportData: StatExport = queries.getStatExport(
     "2025-04-01",
@@ -898,10 +1017,38 @@ const pitches: Pitch[] = database
     `)
     .all(777858) as Pitch[]
 
+const players = database
+    .prepare(`
+        SELECT
+            player_id,
+            first_name,
+            last_name,
+            full_name,
+            primary_position,
+            bats,
+            throws,
+            birth_date,
+            birth_city,
+            birth_country,
+            height,
+            weight,
+            mlb_debut_date,
+            primary_number,
+            nick_name
+        FROM players
+        ORDER BY player_id
+    `)
+    .all()
+
+if (game) {
+    syncGame(game)
+}
+
 console.log(game?.gamePk)
 console.log(completedGamePks.length)
 console.log(exportData.plateAppearances.length)
 console.log(pitches.length)
+console.log(players.length)
 ```
 
-This example downloads a season, retrieves a complete game feed, retrieves completed game identifiers for a date range, exports normalized relational data, and executes a custom SQL query against the underlying SQLite database.
+This example downloads a season, retrieves a complete game feed, retrieves completed game identifiers for a date range, exports normalized relational data, queries stored pitches, reads the normalized player table, and demonstrates re-synchronizing an existing stored game without downloading it again.
