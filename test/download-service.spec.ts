@@ -10,6 +10,8 @@ import { GameRepository } from "../src/repository/game-repository.js"
 import { PitchRepository } from "../src/repository/pitch-repository.js"
 import { PlateAppearanceRepository } from "../src/repository/plate-appearance-repository.js"
 import { PlayerAppearanceRepository } from "../src/repository/player-appearance-repository.js"
+import { PlayerRepository } from "../src/repository/player-repository.js"
+import { RosterRepository } from "../src/repository/roster-repository.js"
 import { RunnerMovementRepository } from "../src/repository/runner-movement-repository.js"
 import { ScheduleRepository } from "../src/repository/schedule-repository.js"
 
@@ -19,21 +21,30 @@ import { DownloadService } from "../src/service/download-service.js"
 import type { MLBStatsAPIClient } from "../src/service/download-service.js"
 import { GameService } from "../src/service/game-service.js"
 import { SchemaService } from "../src/service/schema-service.js"
-import { PlayerRepository } from "../src/repository/player-repository.js"
+
 
 class MLBStatsAPIClientTestHarness implements MLBStatsAPIClient {
 
     public readonly scheduleRequests: number[] = []
     public readonly gameRequests: number[] = []
+    public readonly rosterRequests: {
+        teamId: number
+        rosterType: string
+        date: string
+    }[] = []
+
     public readonly schedules = new Map<number, ScheduleResponse>()
     public readonly games = new Map<number, GameFeedResponse>()
+    public readonly rosters = new Map<string, any[]>()
     public readonly gameErrors = new Map<number, Error>()
 
     public async getSchedule(options: { params: { sportId: number, startDate: string, endDate: string, gameTypes: string } }): Promise<{ data: ScheduleResponse }> {
         const season = Number(options.params.startDate.slice(0, 4))
         const schedule = this.schedules.get(season)
 
-        this.scheduleRequests.push(season)
+        this.scheduleRequests.push(
+            season
+        )
 
         if (!schedule) {
             throw new Error(`Missing test schedule for ${season}.`)
@@ -49,7 +60,9 @@ class MLBStatsAPIClientTestHarness implements MLBStatsAPIClient {
         const error = this.gameErrors.get(gamePk)
         const game = this.games.get(gamePk)
 
-        this.gameRequests.push(gamePk)
+        this.gameRequests.push(
+            gamePk
+        )
 
         if (error) {
             throw error
@@ -63,13 +76,40 @@ class MLBStatsAPIClientTestHarness implements MLBStatsAPIClient {
             data: game
         }
     }
+
+    public async getTeamRoster(options: { pathParams: { teamId: number }, params: { rosterType: string, date: string } }): Promise<{ data: { roster?: any[] } }> {
+        const teamId = options.pathParams.teamId
+        const rosterType = options.params.rosterType
+        const date = options.params.date
+        const key = `${date}:${teamId}`
+        const roster = this.rosters.get(key)
+
+        this.rosterRequests.push({
+            teamId,
+            rosterType,
+            date
+        })
+
+        if (!roster) {
+            throw new Error(`Missing test roster for team ${teamId} on ${date}.`)
+        }
+
+        return {
+            data: {
+                roster
+            }
+        }
+    }
+
 }
+
 
 describe("DownloadService", function () {
 
     let schemaService: SchemaService
     let gameRepository: GameRepository
     let scheduleRepository: ScheduleRepository
+    let rosterRepository: RosterRepository
     let gameService: GameService
     let api: MLBStatsAPIClientTestHarness
     let service: DownloadService
@@ -81,6 +121,7 @@ describe("DownloadService", function () {
 
         gameRepository = new GameRepository(database)
         scheduleRepository = new ScheduleRepository(database)
+        rosterRepository = new RosterRepository(database)
 
         const playerAppearanceRepository = new PlayerAppearanceRepository(database)
         const plateAppearanceRepository = new PlateAppearanceRepository(database)
@@ -107,6 +148,7 @@ describe("DownloadService", function () {
         service = new DownloadService(
             gameService,
             scheduleRepository,
+            rosterRepository,
             api,
             0
         )
@@ -223,7 +265,9 @@ describe("DownloadService", function () {
             }
         ]))
 
-        const schedule = await service.getSchedule(2025)
+        const schedule = await service.getSchedule(
+            2025
+        )
 
         assert.equal(
             schedule.season,
@@ -265,7 +309,9 @@ describe("DownloadService", function () {
             ]
         )
 
-        scheduleRepository.put(schedule)
+        scheduleRepository.put(
+            schedule
+        )
 
         const loaded = await service.getSchedule(
             2025
@@ -296,7 +342,9 @@ describe("DownloadService", function () {
             ]
         )
 
-        scheduleRepository.put(schedule)
+        scheduleRepository.put(
+            schedule
+        )
 
         const loaded = await service.getSchedule(
             season
@@ -736,6 +784,7 @@ describe("DownloadService", function () {
         )
     })
 
+
     function createGameFeed(gamePk: number, officialDate: string, detailedState: string): GameFeedResponse {
         const completed =
             detailedState === "Final" ||
@@ -817,7 +866,9 @@ describe("DownloadService", function () {
                 game.officialDate
             ) ?? []
 
-            dateGames.push(game)
+            dateGames.push(
+                game
+            )
 
             dates.set(
                 game.officialDate,
@@ -840,7 +891,9 @@ describe("DownloadService", function () {
             }))
         } as unknown as ScheduleResponse
     }
+
 })
+
 
 interface ScheduleGameInput {
     gamePk: number

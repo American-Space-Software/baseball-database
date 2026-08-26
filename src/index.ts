@@ -1,44 +1,34 @@
 #!/usr/bin/env node
 
+import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
-import fs from "fs"
+
+import type BetterSqlite3 from "better-sqlite3"
+
 import MLBStatsAPI from "mlb-stats-api"
 
 import { DefensiveEvent, DefensiveEventRepository } from "./repository/defensive-event-repository.js"
 import { FieldingCredit, FieldingCreditRepository } from "./repository/fielding-credit-repository.js"
 import { GameRepository } from "./repository/game-repository.js"
-import {  PitchRepository } from "./repository/pitch-repository.js"
-import {  PlateAppearanceRepository } from "./repository/plate-appearance-repository.js"
-import {  PlayerAppearanceRepository } from "./repository/player-appearance-repository.js"
-import {  RunnerMovementRepository } from "./repository/runner-movement-repository.js"
-import {  ScheduleRepository } from "./repository/schedule-repository.js"
+import { PitchRepository } from "./repository/pitch-repository.js"
+import { PlateAppearanceRepository } from "./repository/plate-appearance-repository.js"
+import { PlayerAppearanceRepository } from "./repository/player-appearance-repository.js"
+import { PlayerRepository } from "./repository/player-repository.js"
+import { Roster, RosterRepository } from "./repository/roster-repository.js"
+import { RunnerMovementRepository } from "./repository/runner-movement-repository.js"
+import { ScheduleRepository } from "./repository/schedule-repository.js"
 
 import { DownloadService } from "./service/download-service.js"
 import { GameService, GameSyncHook } from "./service/game-service.js"
 import { SchemaService } from "./service/schema-service.js"
 import { StatExportService } from "./service/stat-export-service.js"
 
-import {     
-    Game,
-    Pitch,
-    PlateAppearance,
-    PlayerAppearance, 
-    RunnerMovement,
-    Schedule,
-    StatExport
-} from "./repository/interfaces.js"
+import { Game, Pitch, PlateAppearance, PlayerAppearance, RunnerMovement, Schedule, StatExport } from "./repository/interfaces.js"
 
-import type BetterSqlite3 from "better-sqlite3"
-import { PlayerRepository } from "./repository/player-repository.js"
 
-const databasePath =
-    process.env.BASEBALL_DATABASE_PATH ??
-    path.resolve(process.cwd(), "data/baseball.sqlite")
-
-const throttleMs = process.env.THROTTLE_MS
-    ? parseInt(process.env.THROTTLE_MS)
-    : 200
+const databasePath = process.env.BASEBALL_DATABASE_PATH ?? path.resolve(process.cwd(), "data/baseball.sqlite")
+const throttleMs = process.env.THROTTLE_MS ? parseInt(process.env.THROTTLE_MS) : 200
 
 const schemaService = new SchemaService(databasePath)
 const database: BetterSqlite3.Database = schemaService.load()
@@ -52,6 +42,7 @@ const fieldingCreditRepository = new FieldingCreditRepository(database)
 const scheduleRepository = new ScheduleRepository(database)
 const defensiveEventRepository = new DefensiveEventRepository(database)
 const playerRepository = new PlayerRepository(database)
+const rosterRepository = new RosterRepository(database)
 
 const statExportService = new StatExportService(
     gameRepository,
@@ -72,15 +63,18 @@ const gameService = new GameService(
     runnerMovementRepository,
     fieldingCreditRepository,
     defensiveEventRepository,
-    playerRepository
+    playerRepository,
+    rosterRepository
 )
 
 const downloadService = new DownloadService(
     gameService,
     scheduleRepository,
+    rosterRepository,
     new MLBStatsAPI(),
     throttleMs
 )
+
 
 function getGame(gamePk: number) {
     return gameService.get(gamePk)
@@ -90,19 +84,32 @@ function getSchedule(season: number) {
     return scheduleRepository.get(season)
 }
 
+function getPlayer(playerId: number) {
+    return playerRepository.get(playerId)
+}
+
+function getPlayers() {
+    return playerRepository.getAll()
+}
+
+function getRoster(gameDate: string, teamId: number): Roster[] {
+    return rosterRepository.get(gameDate, teamId)
+}
+
 function getStatExport(startDate: string, endDate: string) {
     return statExportService.getByDateRange(startDate, endDate)
 }
 
 function getCompletedGamePksByDateRange(startDate: string, endDate: string): number[] {
-    return gameRepository.getCompletedGamePksByDateRange(
-        startDate,
-        endDate
-    )
+    return gameRepository.getCompletedGamePksByDateRange(startDate, endDate)
 }
 
 function syncGame(game: Game): void {
     gameService.syncGame(game)
+}
+
+async function syncRosters(gameDate: string, force = false): Promise<void> {
+    await downloadService.syncRosters(gameDate, force)
 }
 
 async function downloadSeason(season: number, force = false): Promise<Set<number>> {
@@ -124,13 +131,16 @@ async function downloadSeasons(startSeason: number, endSeason: number, force = f
     return results
 }
 
-
 function setGameSyncHooks(hooks: GameSyncHook[]): void {
     gameService.gameSyncHooks = hooks
 }
 
+
 const queries = {
     getGame,
+    getPlayer,
+    getPlayers,
+    getRoster,
     getSchedule,
     getStatExport,
     getCompletedGamePksByDateRange
@@ -139,6 +149,7 @@ const queries = {
 const hooks = {
     setGameSyncHooks
 }
+
 
 async function run(): Promise<void> {
     const force = process.argv.includes("--force")
@@ -153,11 +164,7 @@ async function run(): Promise<void> {
     }
 
     if (seasons.length === 1) {
-        await downloadSeason(
-            seasons[0],
-            force
-        )
-
+        await downloadSeason(seasons[0], force)
         return
     }
 
@@ -168,18 +175,11 @@ async function run(): Promise<void> {
             throw new Error("The start season cannot be after the end season.")
         }
 
-        await downloadSeasons(
-            startSeason,
-            endSeason,
-            force
-        )
-
+        await downloadSeasons(startSeason, endSeason, force)
         return
     }
 
-    throw new Error(
-        "Expected one season or a start and end season."
-    )
+    throw new Error("Expected one season or a start and end season.")
 }
 
 function isMainModule(): boolean {
@@ -194,6 +194,7 @@ function isMainModule(): boolean {
     }
 }
 
+
 if (isMainModule()) {
     run()
         .catch((error: unknown) => {
@@ -205,25 +206,26 @@ if (isMainModule()) {
         })
 }
 
+
 export {
+    database,
     downloadSeason,
     downloadSeasons,
-    syncGame,
+    hooks,
     queries,
-    database,
-    hooks
+    syncGame,
+    syncRosters
 }
 
 
-
-
 export type {
-    StatExport,
+    DefensiveEvent,
     FieldingCredit,
     Pitch,
     PlateAppearance,
-    PlayerAppearance, 
+    PlayerAppearance,
+    Roster,
     RunnerMovement,
     Schedule,
-    DefensiveEvent,
+    StatExport
 }

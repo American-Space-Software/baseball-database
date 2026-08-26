@@ -1,15 +1,19 @@
 class DownloadService {
     gameService;
     scheduleRepository;
+    rosterRepository;
     api;
     throttleMs;
     scheduleCacheMs;
-    constructor(gameService, scheduleRepository, api, throttleMs = 200, scheduleCacheMs = 1000 * 60 * 60) {
+    rosterCacheMs;
+    constructor(gameService, scheduleRepository, rosterRepository, api, throttleMs = 200, scheduleCacheMs = 1000 * 60 * 60, rosterCacheMs = 1000 * 60 * 15) {
         this.gameService = gameService;
         this.scheduleRepository = scheduleRepository;
+        this.rosterRepository = rosterRepository;
         this.api = api;
         this.throttleMs = throttleMs;
         this.scheduleCacheMs = scheduleCacheMs;
+        this.rosterCacheMs = rosterCacheMs;
     }
     async syncSeason(season, force = false) {
         const syncStartedAt = Date.now();
@@ -121,6 +125,75 @@ class DownloadService {
             `${this.formatPreciseDuration(totalDuration)}`);
         return synchronizedGamePks;
     }
+    async syncRosters(gameDate, force = false) {
+        this.validateDate(gameDate);
+        const season = Number(gameDate.slice(0, 4));
+        const schedule = await this.getSchedule(season, false);
+        const scheduleDate = (schedule.data.dates ?? []).find(date => String(date.date ?? "") === gameDate);
+        if (!scheduleDate) {
+            throw new Error(`No MLB schedule found for ${gameDate}.`);
+        }
+        const teams = new Map();
+        for (const game of scheduleDate.games ?? []) {
+            for (const side of [
+                "away",
+                "home"
+            ]) {
+                const team = game?.teams?.[side]?.team;
+                const teamId = Number(team?.id);
+                if (!Number.isFinite(teamId) || teamId <= 0) {
+                    continue;
+                }
+                teams.set(teamId, {
+                    id: teamId,
+                    name: String(team?.name ??
+                        teamId)
+                });
+            }
+        }
+        console.log(`Synchronizing ${teams.size} active MLB rosters for ${gameDate}.`);
+        let downloaded = 0;
+        let cached = 0;
+        for (const team of teams.values()) {
+            const downloadedAt = this.rosterRepository.getDownloadedAt(gameDate, team.id);
+            if (!force &&
+                downloadedAt &&
+                !this.shouldRefreshRoster(gameDate, downloadedAt)) {
+                cached++;
+                continue;
+            }
+            const response = await this.api.getTeamRoster({
+                pathParams: {
+                    teamId: team.id
+                },
+                params: {
+                    rosterType: "active",
+                    date: gameDate
+                }
+            });
+            const roster = response.data.roster ?? [];
+            if (roster.length === 0) {
+                throw new Error(`MLB returned an empty active roster for ${team.name} (${team.id}) on ${gameDate}.`);
+            }
+            this.rosterRepository.put(gameDate, team.id, new Date().toISOString(), roster.map((row) => {
+                const playerId = Number(row?.person?.id);
+                if (!Number.isFinite(playerId) || playerId <= 0) {
+                    throw new Error(`MLB roster entry for ${team.name} on ${gameDate} does not contain a valid player ID.`);
+                }
+                return {
+                    playerId,
+                    position: String(row?.position?.abbreviation ??
+                        "")
+                };
+            }));
+            downloaded++;
+            if (this.throttleMs > 0) {
+                await this.sleep(this.throttleMs);
+            }
+        }
+        console.log(`Synchronized rosters for ${gameDate}: ` +
+            `${downloaded} downloaded, ${cached} cached.`);
+    }
     async syncGame(gamePk) {
         const game = {
             gamePk,
@@ -201,8 +274,20 @@ class DownloadService {
         }
         return Date.now() - downloadedAt > this.scheduleCacheMs;
     }
+    shouldRefreshRoster(gameDate, downloadedAt) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (gameDate < today) {
+            return false;
+        }
+        const downloadedTime = new Date(downloadedAt).getTime();
+        if (!Number.isFinite(downloadedTime)) {
+            return true;
+        }
+        return Date.now() - downloadedTime > this.rosterCacheMs;
+    }
     getGameDate(game) {
-        return game.officialDate ?? game.gameDate?.slice(0, 10);
+        return game.officialDate ??
+            game.gameDate?.slice(0, 10);
     }
     isCurrentSeason(season) {
         return season === new Date().getUTCFullYear();
@@ -215,6 +300,16 @@ class DownloadService {
         const now = new Date();
         const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
         return gameTime > today;
+    }
+    validateDate(date) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            throw new Error(`Invalid date: ${date}.`);
+        }
+        const parsed = new Date(`${date}T12:00:00.000Z`);
+        if (Number.isNaN(parsed.getTime()) ||
+            parsed.toISOString().slice(0, 10) !== date) {
+            throw new Error(`Invalid date: ${date}.`);
+        }
     }
     async sleep(milliseconds) {
         await new Promise(resolve => setTimeout(resolve, milliseconds));

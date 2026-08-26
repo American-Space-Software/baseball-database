@@ -1,7 +1,7 @@
 #!/usr/bin/env node
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
 import MLBStatsAPI from "mlb-stats-api";
 import { DefensiveEventRepository } from "./repository/defensive-event-repository.js";
 import { FieldingCreditRepository } from "./repository/fielding-credit-repository.js";
@@ -9,18 +9,16 @@ import { GameRepository } from "./repository/game-repository.js";
 import { PitchRepository } from "./repository/pitch-repository.js";
 import { PlateAppearanceRepository } from "./repository/plate-appearance-repository.js";
 import { PlayerAppearanceRepository } from "./repository/player-appearance-repository.js";
+import { PlayerRepository } from "./repository/player-repository.js";
+import { RosterRepository } from "./repository/roster-repository.js";
 import { RunnerMovementRepository } from "./repository/runner-movement-repository.js";
 import { ScheduleRepository } from "./repository/schedule-repository.js";
 import { DownloadService } from "./service/download-service.js";
 import { GameService } from "./service/game-service.js";
 import { SchemaService } from "./service/schema-service.js";
 import { StatExportService } from "./service/stat-export-service.js";
-import { PlayerRepository } from "./repository/player-repository.js";
-const databasePath = process.env.BASEBALL_DATABASE_PATH ??
-    path.resolve(process.cwd(), "data/baseball.sqlite");
-const throttleMs = process.env.THROTTLE_MS
-    ? parseInt(process.env.THROTTLE_MS)
-    : 200;
+const databasePath = process.env.BASEBALL_DATABASE_PATH ?? path.resolve(process.cwd(), "data/baseball.sqlite");
+const throttleMs = process.env.THROTTLE_MS ? parseInt(process.env.THROTTLE_MS) : 200;
 const schemaService = new SchemaService(databasePath);
 const database = schemaService.load();
 const gameRepository = new GameRepository(database);
@@ -32,14 +30,21 @@ const fieldingCreditRepository = new FieldingCreditRepository(database);
 const scheduleRepository = new ScheduleRepository(database);
 const defensiveEventRepository = new DefensiveEventRepository(database);
 const playerRepository = new PlayerRepository(database);
+const rosterRepository = new RosterRepository(database);
 const statExportService = new StatExportService(gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
-const gameService = new GameService(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository, playerRepository);
-const downloadService = new DownloadService(gameService, scheduleRepository, new MLBStatsAPI(), throttleMs);
+const gameService = new GameService(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository, playerRepository, rosterRepository);
+const downloadService = new DownloadService(gameService, scheduleRepository, rosterRepository, new MLBStatsAPI(), throttleMs);
 function getGame(gamePk) {
     return gameService.get(gamePk);
 }
 function getSchedule(season) {
     return scheduleRepository.get(season);
+}
+function getPlayer(playerId) {
+    return playerRepository.get(playerId);
+}
+function getRoster(gameDate, teamId) {
+    return rosterRepository.get(gameDate, teamId);
 }
 function getStatExport(startDate, endDate) {
     return statExportService.getByDateRange(startDate, endDate);
@@ -49,6 +54,9 @@ function getCompletedGamePksByDateRange(startDate, endDate) {
 }
 function syncGame(game) {
     gameService.syncGame(game);
+}
+async function syncRosters(gameDate, force = false) {
+    await downloadService.syncRosters(gameDate, force);
 }
 async function downloadSeason(season, force = false) {
     return downloadService.syncSeason(season, force);
@@ -66,6 +74,8 @@ function setGameSyncHooks(hooks) {
 }
 const queries = {
     getGame,
+    getPlayer,
+    getRoster,
     getSchedule,
     getStatExport,
     getCompletedGamePksByDateRange
@@ -117,5 +127,5 @@ if (isMainModule()) {
         schemaService.close();
     });
 }
-export { downloadSeason, downloadSeasons, syncGame, queries, database, hooks };
+export { database, downloadSeason, downloadSeasons, hooks, queries, syncGame, syncRosters };
 //# sourceMappingURL=index.js.map

@@ -481,6 +481,32 @@ const createQuery = `
 
 
 
+    CREATE TABLE rosters (
+        date TEXT NOT NULL,
+        team_id INTEGER NOT NULL,
+        player_id INTEGER NOT NULL,
+        position TEXT NOT NULL,
+        downloaded_at TEXT NOT NULL,
+
+        PRIMARY KEY (
+            date,
+            team_id,
+            player_id
+        )
+    );
+
+    CREATE INDEX idx_rosters_team_date
+    ON rosters (
+        team_id,
+        date
+    );
+
+    CREATE INDEX idx_rosters_player
+    ON rosters (
+        player_id
+    );
+
+
 `
 
 export {

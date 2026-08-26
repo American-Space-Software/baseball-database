@@ -8,8 +8,9 @@ class GameService {
     fieldingCreditRepository;
     defensiveEventRepository;
     playerRepository;
+    rosterRepository;
     _gameSyncHooks = [];
-    constructor(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository, playerRepository) {
+    constructor(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository, playerRepository, rosterRepository) {
         this.schemaService = schemaService;
         this.gameRepository = gameRepository;
         this.playerAppearanceRepository = playerAppearanceRepository;
@@ -19,6 +20,7 @@ class GameService {
         this.fieldingCreditRepository = fieldingCreditRepository;
         this.defensiveEventRepository = defensiveEventRepository;
         this.playerRepository = playerRepository;
+        this.rosterRepository = rosterRepository;
     }
     set gameSyncHooks(hooks) {
         this._gameSyncHooks = hooks;

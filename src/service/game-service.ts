@@ -9,6 +9,7 @@ import { DefensiveEvent, DefensiveEventRepository } from "../repository/defensiv
 import { SchemaService } from "./schema-service.js"
 import { Game } from "../repository/interfaces.js"
 import { PlayerRepository } from "../repository/player-repository.js"
+import { RosterRepository } from "../repository/roster-repository.js"
 
 
 interface GameSyncHook {
@@ -29,7 +30,8 @@ class GameService {
         private readonly runnerMovementRepository: RunnerMovementRepository,
         private readonly fieldingCreditRepository: FieldingCreditRepository,
         private readonly defensiveEventRepository: DefensiveEventRepository,
-        private readonly playerRepository:PlayerRepository
+        private readonly playerRepository:PlayerRepository,
+        private readonly rosterRepository:RosterRepository
         
     ) {}
 

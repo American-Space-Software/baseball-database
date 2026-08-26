@@ -8,7 +8,9 @@ Download every official MLB game into a local SQLite database with a single comm
 
 `baseball-database` downloads official MLB schedules and game feeds from the MLB Stats API, preserves every response exactly as returned by MLB, and automatically builds a normalized relational database for fast baseball analytics.
 
-Instead of repeatedly downloading game feeds or parsing deeply nested JSON, your application can query pitches, plate appearances, runners, fielders, and games directly using SQL or the included TypeScript API.
+It can also synchronize date-specific active MLB rosters so applications can work with the players available to each team on a particular day.
+
+Instead of repeatedly downloading game feeds or parsing deeply nested JSON, your application can query pitches, plate appearances, runners, fielders, rosters, players, and games directly using SQL or the included TypeScript API.
 
 It can be used as either:
 
@@ -16,7 +18,7 @@ It can be used as either:
 - 🖥️ A command-line tool
 - 🗄️ A local baseball database for analytics
 
-> **Store every official MLB game exactly once, then query it forever.**
+> **Store official MLB data locally, then query it whenever you need it.**
 
 **npm:** https://www.npmjs.com/package/baseball-database
 
@@ -28,6 +30,7 @@ It can be used as either:
 - 📅 Download individual seasons or inclusive season ranges
 - 🔄 Incrementally synchronize only games that have changed
 - ⏱️ Automatically refresh games that are still in progress
+- 📋 Synchronize active MLB rosters for specific dates
 - 💾 Preserve every official schedule and game feed exactly as returned by MLB
 - 🗄️ Automatically extract game and player data into a normalized relational schema
 - 👤 Maintain normalized player identity, position, handedness, and birth date data
@@ -61,6 +64,25 @@ import { queries } from "baseball-database"
 const game = queries.getGame(777858)
 ```
 
+Synchronize active rosters for a date:
+
+```ts
+import { syncRosters } from "baseball-database"
+
+await syncRosters("2026-08-20")
+```
+
+Query a stored team roster:
+
+```ts
+import { queries } from "baseball-database"
+
+const roster = queries.getRoster(
+    "2026-08-20",
+    143
+)
+```
+
 Or execute SQL directly:
 
 ```ts
@@ -81,7 +103,7 @@ const result = database
 ```text
                 MLB Stats API
                       │
-          schedules + game feeds
+       schedules + game feeds + rosters
                       │
                       ▼
           baseball-database
@@ -99,9 +121,9 @@ const result = database
    TypeScript API             Custom SQL
 ```
 
-The original MLB game feeds are preserved exactly as returned by the API.
+The original MLB schedules and game feeds are preserved exactly as returned by the API.
 
-To make analytics dramatically faster, commonly queried game, player, appearance, pitch, baserunning, and defensive information is automatically extracted into relational tables while preserving the original JSON as the canonical source of truth.
+To make analytics dramatically faster, commonly queried game, player, roster, appearance, pitch, baserunning, and defensive information is stored in relational tables.
 
 Applications can choose between:
 
@@ -165,7 +187,7 @@ npx baseball-database 2025 --force
 
 # Library Usage
 
-Before querying data, download at least one season into your local database.
+Before querying game data, download at least one season into your local database.
 
 ## Download a season
 
@@ -189,6 +211,33 @@ await downloadSeasons(2023, 2025)
 
 ---
 
+## Synchronize active rosters
+
+Active MLB rosters are synchronized separately from season game downloads.
+
+```ts
+import { syncRosters } from "baseball-database"
+
+await syncRosters("2026-08-20")
+```
+
+The date determines which teams are scheduled and which active roster is requested from MLB for each team.
+
+Existing roster data is reused according to the downloader's freshness rules.
+
+Force a refresh:
+
+```ts
+import { syncRosters } from "baseball-database"
+
+await syncRosters(
+    "2026-08-20",
+    true
+)
+```
+
+---
+
 ## Query downloaded data
 
 ```ts
@@ -196,7 +245,14 @@ import { queries } from "baseball-database"
 
 const game = queries.getGame(777858)
 
+const player = queries.getPlayer(592450)
+
 const schedule = queries.getSchedule(2025)
+
+const roster = queries.getRoster(
+    "2026-08-20",
+    143
+)
 
 const exportData = queries.getStatExport(
     "2025-04-01",
@@ -219,11 +275,11 @@ const pitches = database
     .prepare(`
         SELECT
             pitcher_id,
-            pitch_name,
-            AVG(release_speed) AS velocity,
+            pitch_type_description,
+            AVG(start_speed) AS velocity,
             COUNT(*) AS pitches
         FROM pitches
-        GROUP BY pitcher_id, pitch_name
+        GROUP BY pitcher_id, pitch_type_description
         ORDER BY pitches DESC
     `)
     .all()
@@ -240,8 +296,10 @@ The complete TypeScript API reference is available in [API.md](API.md).
 It includes:
 
 - Download functions
+- Roster synchronization
 - Query helpers
 - Database access
+- TypeScript interfaces
 - Complete usage examples
 
 ---
@@ -274,13 +332,15 @@ Every official schedule and game feed is stored exactly as returned by MLB.
 
 The normalized tables, including player metadata and game-level analytical tables, are derived from those game feeds to make querying faster, but the original JSON is always preserved and remains the canonical source of truth.
 
+Active roster snapshots are stored separately by date and team after being retrieved from the MLB Stats API.
+
 ---
 
 # Data Source
 
-Game schedules and live game feeds are downloaded from MLB's public Stats API using the open-source [`mlb-stats-api`](https://github.com/asbeane/mlb-stats-api) Node.js client. This package is **not** developed, maintained, or endorsed by Major League Baseball; it is an independent community project that provides a convenient wrapper around the MLB Stats API.
+Game schedules, game feeds, and active rosters are downloaded from MLB's public Stats API using the open-source [`mlb-stats-api`](https://github.com/asbeane/mlb-stats-api) Node.js client. This package is **not** developed, maintained, or endorsed by Major League Baseball; it is an independent community project that provides a convenient wrapper around the MLB Stats API.
 
-`baseball-database` stores the responses exactly as they are returned by the MLB Stats API. No game data is modified before being written to the database.
+`baseball-database` stores schedule and game-feed responses exactly as they are returned by the MLB Stats API. No game data is modified before being written to the database.
 
 ---
 
@@ -293,6 +353,7 @@ The database exposes both the original game feeds and a normalized relational sc
 | `games` | Original MLB game feeds with indexed metadata |
 | `schedules` | Official schedules by season |
 | `players` | Player identity, primary position, handedness, and birth date |
+| `rosters` | Active MLB roster membership by date and team |
 | `player_appearances` | Every player appearance in every game |
 | `plate_appearances` | Every plate appearance |
 | `pitches` | Every pitch including Statcast measurements |
@@ -301,6 +362,8 @@ The database exposes both the original game feeds and a normalized relational sc
 | `defensive_events` | Defensive substitutions and position changes |
 
 Player records are populated from the `gameData.players` collection in synchronized MLB game feeds and updated as newer game data is processed.
+
+Roster records are synchronized separately for a requested date and contain each active player's MLB player ID and listed position for that team.
 
 These tables make common baseball analytics straightforward without repeatedly traversing deeply nested JSON documents.
 
@@ -329,6 +392,7 @@ Most baseball applications eventually need to solve the same problems:
 
 - Download official schedules
 - Download game feeds
+- Synchronize active rosters
 - Cache data locally
 - Synchronize updates
 - Support offline access

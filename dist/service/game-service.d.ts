@@ -8,6 +8,7 @@ import { DefensiveEventRepository } from "../repository/defensive-event-reposito
 import { SchemaService } from "./schema-service.js";
 import { Game } from "../repository/interfaces.js";
 import { PlayerRepository } from "../repository/player-repository.js";
+import { RosterRepository } from "../repository/roster-repository.js";
 interface GameSyncHook {
     run(game: Game): void;
 }
@@ -21,8 +22,9 @@ declare class GameService {
     private readonly fieldingCreditRepository;
     private readonly defensiveEventRepository;
     private readonly playerRepository;
+    private readonly rosterRepository;
     private _gameSyncHooks;
-    constructor(schemaService: SchemaService, gameRepository: GameRepository, playerAppearanceRepository: PlayerAppearanceRepository, plateAppearanceRepository: PlateAppearanceRepository, pitchRepository: PitchRepository, runnerMovementRepository: RunnerMovementRepository, fieldingCreditRepository: FieldingCreditRepository, defensiveEventRepository: DefensiveEventRepository, playerRepository: PlayerRepository);
+    constructor(schemaService: SchemaService, gameRepository: GameRepository, playerAppearanceRepository: PlayerAppearanceRepository, plateAppearanceRepository: PlateAppearanceRepository, pitchRepository: PitchRepository, runnerMovementRepository: RunnerMovementRepository, fieldingCreditRepository: FieldingCreditRepository, defensiveEventRepository: DefensiveEventRepository, playerRepository: PlayerRepository, rosterRepository: RosterRepository);
     set gameSyncHooks(hooks: GameSyncHook[]);
     get(gamePk: number): Game | undefined;
     getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
