@@ -43,6 +43,9 @@ function getSchedule(season) {
 function getPlayer(playerId) {
     return playerRepository.get(playerId);
 }
+function getPlayers() {
+    return playerRepository.getAll();
+}
 function getRoster(gameDate, teamId) {
     return rosterRepository.get(gameDate, teamId);
 }
@@ -75,6 +78,7 @@ function setGameSyncHooks(hooks) {
 const queries = {
     getGame,
     getPlayer,
+    getPlayers,
     getRoster,
     getSchedule,
     getStatExport,

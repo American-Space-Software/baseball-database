@@ -9,6 +9,7 @@ declare const database: BetterSqlite3.Database;
 declare function getGame(gamePk: number): Game | undefined;
 declare function getSchedule(season: number): Schedule | undefined;
 declare function getPlayer(playerId: number): import("./repository/player-repository.js").Player | undefined;
+declare function getPlayers(): import("./repository/player-repository.js").Player[];
 declare function getRoster(gameDate: string, teamId: number): Roster[];
 declare function getStatExport(startDate: string, endDate: string): StatExport;
 declare function getCompletedGamePksByDateRange(startDate: string, endDate: string): number[];
@@ -20,6 +21,7 @@ declare function setGameSyncHooks(hooks: GameSyncHook[]): void;
 declare const queries: {
     getGame: typeof getGame;
     getPlayer: typeof getPlayer;
+    getPlayers: typeof getPlayers;
     getRoster: typeof getRoster;
     getSchedule: typeof getSchedule;
     getStatExport: typeof getStatExport;
