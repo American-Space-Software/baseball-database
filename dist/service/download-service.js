@@ -175,17 +175,21 @@ class DownloadService {
             if (roster.length === 0) {
                 throw new Error(`MLB returned an empty active roster for ${team.name} (${team.id}) on ${gameDate}.`);
             }
-            this.rosterRepository.put(gameDate, team.id, new Date().toISOString(), roster.map((row) => {
+            const rosterRows = Array.from(new Map(roster.map((row) => {
                 const playerId = Number(row?.person?.id);
                 if (!Number.isFinite(playerId) || playerId <= 0) {
                     throw new Error(`MLB roster entry for ${team.name} on ${gameDate} does not contain a valid player ID.`);
                 }
-                return {
+                return [
                     playerId,
-                    position: String(row?.position?.abbreviation ??
-                        "")
-                };
-            }));
+                    {
+                        playerId,
+                        position: String(row?.position?.abbreviation ??
+                            "")
+                    }
+                ];
+            })).values());
+            this.rosterRepository.put(gameDate, team.id, new Date().toISOString(), rosterRows);
             downloaded++;
             if (this.throttleMs > 0) {
                 await this.sleep(this.throttleMs);

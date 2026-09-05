@@ -281,29 +281,38 @@ class DownloadService {
                 )
             }
 
+            const rosterRows = Array.from(
+                new Map(
+                    roster.map((row: any) => {
+                        const playerId = Number(
+                            row?.person?.id
+                        )
+
+                        if (!Number.isFinite(playerId) || playerId <= 0) {
+                            throw new Error(
+                                `MLB roster entry for ${team.name} on ${gameDate} does not contain a valid player ID.`
+                            )
+                        }
+
+                        return [
+                            playerId,
+                            {
+                                playerId,
+                                position: String(
+                                    row?.position?.abbreviation ??
+                                    ""
+                                )
+                            }
+                        ] as const
+                    })
+                ).values()
+            )
+
             this.rosterRepository.put(
                 gameDate,
                 team.id,
                 new Date().toISOString(),
-                roster.map((row: any) => {
-                    const playerId = Number(
-                        row?.person?.id
-                    )
-
-                    if (!Number.isFinite(playerId) || playerId <= 0) {
-                        throw new Error(
-                            `MLB roster entry for ${team.name} on ${gameDate} does not contain a valid player ID.`
-                        )
-                    }
-
-                    return {
-                        playerId,
-                        position: String(
-                            row?.position?.abbreviation ??
-                            ""
-                        )
-                    }
-                })
+                rosterRows
             )
 
             downloaded++
