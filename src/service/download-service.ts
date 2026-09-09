@@ -415,7 +415,7 @@ class DownloadService {
                 sportId: 1,
                 startDate: `${season}-01-01`,
                 endDate: `${season}-12-31`,
-                gameTypes: "R"
+                gameTypes: "S,R,F,D,L,W"
             }
         })
 
