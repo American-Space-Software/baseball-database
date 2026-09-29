@@ -225,6 +225,8 @@ The date determines which teams are scheduled and which active roster is request
 
 Existing roster data is reused according to the downloader's freshness rules.
 
+When a synchronized roster contains players that are not yet stored locally, `baseball-database` fetches those missing player records and stores them before completing the roster synchronization.
+
 Force a refresh:
 
 ```ts
@@ -330,7 +332,7 @@ npm run download -- 2025 --force
 
 Every official schedule and game feed is stored exactly as returned by MLB.
 
-The normalized tables, including player metadata and game-level analytical tables, are derived from those game feeds to make querying faster, but the original JSON is always preserved and remains the canonical source of truth.
+The normalized tables, including player metadata and game-level analytical tables, are derived from MLB data to make querying faster, but the original schedule and game-feed JSON is always preserved and remains the canonical source of truth.
 
 Active roster snapshots are stored separately by date and team after being retrieved from the MLB Stats API.
 
@@ -361,9 +363,9 @@ The database exposes both the original game feeds and a normalized relational sc
 | `fielding_credits` | Defensive credits recorded during plays |
 | `defensive_events` | Defensive substitutions and position changes |
 
-Player records are populated from the `gameData.players` collection in synchronized MLB game feeds and updated as newer game data is processed.
+Player records are populated from the `gameData.players` collection in synchronized MLB game feeds and updated as newer game data is processed. Roster synchronization also fills in player records for active roster players that are not yet stored locally.
 
-Roster records are synchronized separately for a requested date and contain each active player's MLB player ID and listed position for that team.
+Roster records are synchronized separately for a requested date and contain each active player's MLB player ID and listed position for that team. A roster is not considered fully synchronized until each roster player has a corresponding player record.
 
 These tables make common baseball analytics straightforward without repeatedly traversing deeply nested JSON documents.
 
