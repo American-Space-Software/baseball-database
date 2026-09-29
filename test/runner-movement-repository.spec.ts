@@ -45,11 +45,14 @@ describe("RunnerMovementRepository", function () {
             database.prepare(`
                 INSERT INTO games (
                     game_pk,
-                    data
+                    data,
+                    game_type
+
                 )
                 VALUES (
                     ?,
-                    ?
+                    ?,
+                    'R'
                 )
             `).run(
                 game.gamePk,

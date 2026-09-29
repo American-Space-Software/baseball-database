@@ -33,7 +33,7 @@ const playerRepository = new PlayerRepository(database);
 const rosterRepository = new RosterRepository(database);
 const statExportService = new StatExportService(gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository);
 const gameService = new GameService(schemaService, gameRepository, playerAppearanceRepository, plateAppearanceRepository, pitchRepository, runnerMovementRepository, fieldingCreditRepository, defensiveEventRepository, playerRepository, rosterRepository);
-const downloadService = new DownloadService(gameService, scheduleRepository, rosterRepository, new MLBStatsAPI(), throttleMs);
+const downloadService = new DownloadService(gameService, scheduleRepository, rosterRepository, playerRepository, new MLBStatsAPI(), throttleMs);
 function getGame(gamePk) {
     return gameService.get(gamePk);
 }

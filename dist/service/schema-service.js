@@ -53,6 +53,7 @@ const createQuery = `
     CREATE TABLE games (
         game_pk INTEGER PRIMARY KEY,
         data TEXT NOT NULL,
+        game_type TEXT NOT NULL,
 
         game_date TEXT GENERATED ALWAYS AS (
             json_extract(data, '$.gameData.datetime.officialDate')
@@ -77,6 +78,13 @@ const createQuery = `
 
     CREATE INDEX idx_games_game_date
         ON games(game_date);
+
+    CREATE INDEX idx_games_game_type_date
+        ON games(
+            game_type,
+            game_date,
+            game_pk
+        );
 
     CREATE INDEX idx_games_status
         ON games(coded_game_state);

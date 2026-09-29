@@ -71,6 +71,7 @@ const downloadService = new DownloadService(
     gameService,
     scheduleRepository,
     rosterRepository,
+    playerRepository,
     new MLBStatsAPI(),
     throttleMs
 )

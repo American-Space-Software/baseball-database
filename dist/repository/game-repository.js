@@ -149,17 +149,21 @@ class GameRepository {
         this.database.prepare(`
             INSERT INTO games (
                 game_pk,
-                data
+                data,
+                game_type
             )
             VALUES (
                 @gamePk,
-                @data
+                @data,
+                @gameType
             )
             ON CONFLICT(game_pk) DO UPDATE SET
-                data = excluded.data
+                data = excluded.data,
+                game_type = excluded.game_type
         `).run({
             gamePk: game.gamePk,
-            data: JSON.stringify(game.data)
+            data: JSON.stringify(game.data),
+            gameType: game.data.gameData.game.type
         });
     }
     getGameDatesByDateRange(startDate, endDate) {

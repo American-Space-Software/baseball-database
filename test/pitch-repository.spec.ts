@@ -8,7 +8,7 @@ import {
 
 import type {
     Pitch
-} from "../src/repository/pitch-repository.js"
+} from "../src/repository/interfaces.js"
 
 import { SchemaService } from "../src/service/schema-service.js"
 
@@ -45,17 +45,23 @@ describe("PitchRepository", function () {
             database.prepare(`
                 INSERT INTO games (
                     game_pk,
-                    data
+                    data,
+                    game_type
+
                 )
                 VALUES (
                     ?,
-                    ?
+                    ?,
+                    'R'
                 )
             `).run(
                 game.gamePk,
                 JSON.stringify({
                     gamePk: game.gamePk,
                     gameData: {
+                        game: {
+                            type: "R"
+                        },
                         datetime: {
                             officialDate: game.gameDate
                         }

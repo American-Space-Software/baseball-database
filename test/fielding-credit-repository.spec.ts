@@ -42,26 +42,31 @@ describe("FieldingCreditRepository", function () {
                 gameDate: "2026-07-03"
             }
         ]) {
-            database.prepare(`
-                INSERT INTO games (
-                    game_pk,
-                    data
-                )
-                VALUES (
-                    ?,
-                    ?
-                )
-            `).run(
-                game.gamePk,
-                JSON.stringify({
-                    gamePk: game.gamePk,
-                    gameData: {
-                        datetime: {
-                            officialDate: game.gameDate
+                database.prepare(`
+                    INSERT INTO games (
+                        game_pk,
+                        data,
+                        game_type
+                    )
+                    VALUES (
+                        ?,
+                        ?,
+                        'R'
+                    )
+                `).run(
+                    game.gamePk,
+                    JSON.stringify({
+                        gamePk: game.gamePk,
+                        gameData: {
+                            game: {
+                                type: "R"
+                            },
+                            datetime: {
+                                officialDate: game.gameDate
+                            }
                         }
-                    }
-                })
-            )
+                    })
+                )
         }
 
         for (const plateAppearance of [

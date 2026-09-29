@@ -2,14 +2,16 @@ class DownloadService {
     gameService;
     scheduleRepository;
     rosterRepository;
+    playerRepository;
     api;
     throttleMs;
     scheduleCacheMs;
     rosterCacheMs;
-    constructor(gameService, scheduleRepository, rosterRepository, api, throttleMs = 200, scheduleCacheMs = 1000 * 60 * 60, rosterCacheMs = 1000 * 60 * 15) {
+    constructor(gameService, scheduleRepository, rosterRepository, playerRepository, api, throttleMs = 200, scheduleCacheMs = 1000 * 60 * 60, rosterCacheMs = 1000 * 60 * 15) {
         this.gameService = gameService;
         this.scheduleRepository = scheduleRepository;
         this.rosterRepository = rosterRepository;
+        this.playerRepository = playerRepository;
         this.api = api;
         this.throttleMs = throttleMs;
         this.scheduleCacheMs = scheduleCacheMs;
@@ -152,6 +154,7 @@ class DownloadService {
             }
         }
         console.log(`Synchronizing ${teams.size} active MLB rosters for ${gameDate}.`);
+        const downloadedRosters = [];
         let downloaded = 0;
         let cached = 0;
         for (const team of teams.values()) {
@@ -175,7 +178,7 @@ class DownloadService {
             if (roster.length === 0) {
                 throw new Error(`MLB returned an empty active roster for ${team.name} (${team.id}) on ${gameDate}.`);
             }
-            const rosterRows = Array.from(new Map(roster.map((row) => {
+            const rows = Array.from(new Map(roster.map((row) => {
                 const playerId = Number(row?.person?.id);
                 if (!Number.isFinite(playerId) || playerId <= 0) {
                     throw new Error(`MLB roster entry for ${team.name} on ${gameDate} does not contain a valid player ID.`);
@@ -189,14 +192,64 @@ class DownloadService {
                     }
                 ];
             })).values());
-            this.rosterRepository.put(gameDate, team.id, new Date().toISOString(), rosterRows);
+            downloadedRosters.push({
+                team,
+                rows
+            });
             downloaded++;
             if (this.throttleMs > 0) {
                 await this.sleep(this.throttleMs);
             }
         }
+        await this.syncMissingRosterPlayers(downloadedRosters.flatMap(roster => roster.rows.map(row => row.playerId)));
+        for (const roster of downloadedRosters) {
+            this.rosterRepository.put(gameDate, roster.team.id, new Date().toISOString(), roster.rows);
+        }
         console.log(`Synchronized rosters for ${gameDate}: ` +
             `${downloaded} downloaded, ${cached} cached.`);
+    }
+    async syncMissingRosterPlayers(playerIds) {
+        const missingPlayerIds = Array.from(new Set(playerIds.filter(playerId => !this.playerRepository.get(playerId)))).sort((a, b) => a - b);
+        if (missingPlayerIds.length === 0) {
+            return;
+        }
+        const response = await this.api.getPeople({
+            params: {
+                personIds: missingPlayerIds.join(",")
+            }
+        });
+        const players = new Map((response.data.people ?? []).map((player) => [
+            Number(player?.id),
+            player
+        ]));
+        for (const playerId of missingPlayerIds) {
+            const player = players.get(playerId);
+            if (!player) {
+                throw new Error(`MLB player ${playerId} from an active roster was not returned by the people endpoint.`);
+            }
+            const firstName = player.firstName;
+            const lastName = player.lastName;
+            if (!firstName || !lastName) {
+                throw new Error(`MLB player ${playerId} from an active roster does not contain a first and last name.`);
+            }
+            this.playerRepository.put({
+                playerId,
+                firstName,
+                lastName,
+                fullName: player.fullName ?? `${firstName} ${lastName}`,
+                primaryPosition: player.primaryPosition?.abbreviation ?? null,
+                bats: player.batSide?.code ?? null,
+                throws: player.pitchHand?.code ?? null,
+                birthDate: player.birthDate ?? null,
+                birthCity: player.birthCity ?? null,
+                birthCountry: player.birthCountry ?? null,
+                height: player.height ?? null,
+                weight: this.numberOrNull(player.weight),
+                mlbDebutDate: player.mlbDebutDate ?? null,
+                primaryNumber: player.primaryNumber ?? null,
+                nickName: player.nickName ?? null
+            });
+        }
     }
     async syncGame(gamePk) {
         const game = {
@@ -240,6 +293,15 @@ class DownloadService {
             return Number(a.gamePk) - Number(b.gamePk);
         });
     }
+    numberOrNull(value) {
+        if (value === null || value === undefined || value === "") {
+            return null;
+        }
+        const number = Number(value);
+        return Number.isFinite(number)
+            ? number
+            : null;
+    }
     formatPreciseDuration(milliseconds) {
         if (milliseconds < 1000) {
             return `${milliseconds}ms`;
@@ -252,7 +314,7 @@ class DownloadService {
                 sportId: 1,
                 startDate: `${season}-01-01`,
                 endDate: `${season}-12-31`,
-                gameTypes: "S,R,F,D,L,W"
+                gameTypes: "R,F,D,L,W"
             }
         });
         return response.data;

@@ -62,6 +62,38 @@ describe("GameRepository", function () {
         )
     })
 
+    it("stores the game type in the normalized games column", function () {
+        const game = createGame(
+            123456,
+            "2026-07-20",
+            "Preview",
+            "Preview",
+            "P",
+            "P",
+            "R"
+        )
+
+        repository.put(
+            game
+        )
+
+        const row = schemaService.load().prepare(`
+            SELECT
+                game_type AS gameType
+            FROM games
+            WHERE game_pk = ?
+        `).get(
+            game.gamePk
+        ) as {
+            gameType: string
+        }
+
+        assert.equal(
+            row.gameType,
+            "R"
+        )
+    })
+
     it("replaces an existing game", function () {
         repository.put(
             createGame(
@@ -70,7 +102,8 @@ describe("GameRepository", function () {
                 "Preview",
                 "Preview",
                 "P",
-                "P"
+                "P",
+                "R"
             )
         )
 
@@ -81,7 +114,8 @@ describe("GameRepository", function () {
                 "Final",
                 "Final",
                 "F",
-                "F"
+                "F",
+                "W"
             )
         )
 
@@ -95,7 +129,8 @@ describe("GameRepository", function () {
                 "Final",
                 "Final",
                 "F",
-                "F"
+                "F",
+                "W"
             )
         )
     })
@@ -1041,12 +1076,15 @@ describe("GameRepository", function () {
         )
     })
 
-    function createGame(gamePk: number, gameDate: string, abstractGameState: string, detailedState: string, codedGameState: string, statusCode: string): Game {
+    function createGame(gamePk: number, gameDate: string, abstractGameState: string, detailedState: string, codedGameState: string, statusCode: string, gameType = "R"): Game {
         return {
             gamePk,
             data: {
                 gamePk,
                 gameData: {
+                    game: {
+                        type: gameType
+                    },
                     datetime: {
                         officialDate: gameDate
                     },
